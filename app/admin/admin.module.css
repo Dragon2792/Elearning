@@ -1,0 +1,234 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f1f5f9;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 1rem;
+  color: #64748b;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sidebar {
+  width: 260px;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 100;
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebarLogo {
+  font-size: 1.75rem;
+}
+
+.sidebarBrand {
+  font-size: 1rem;
+  font-weight: 800;
+  color: white;
+  display: block;
+}
+
+.adminBadge {
+  font-size: 0.65rem;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.nav {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+}
+
+.navItemActive {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white !important;
+}
+
+.navIcon {
+  font-size: 1.1rem;
+}
+
+.sidebarFooter {
+  padding: 1rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+}
+
+.userAvatar {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.userDetail {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.userRole {
+  color: #6366f1;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.footerLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.switchBtn {
+  width: 100%;
+  padding: 0.6rem;
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.switchBtn:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 0.6rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.main {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: white;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.topbarTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.adminTag {
+  font-size: 0.8rem;
+  color: #6366f1;
+  font-weight: 600;
+  background: #ede9fe;
+  padding: 0.3rem 0.75rem;
+  border-radius: 99px;
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+}
