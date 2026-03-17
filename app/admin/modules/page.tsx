@@ -50,7 +50,6 @@ export default function AdminModules() {
   const [moduleFiles, setModuleFiles] = useState<ModuleFile[]>([]);
 
   // Form state
-  const [weekNumber, setWeekNumber] = useState(1);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublished, setIsPublished] = useState(false);
@@ -117,7 +116,6 @@ export default function AdminModules() {
   const handleCreate = () => {
     setView("create");
     setEditingModule(null);
-    setWeekNumber(1);
     setTitle("");
     setDescription("");
     setIsPublished(false);
@@ -131,12 +129,14 @@ export default function AdminModules() {
       },
     ]);
     setModuleFiles([]);
+    setSelectedFile(null);
+    setFileTitle("");
+    setFileDesc("");
     setErrorMsg("");
   };
 
   const handleEdit = async (mod: Module) => {
     setEditingModule(mod);
-    setWeekNumber(mod.week_number);
     setTitle(mod.title);
     setDescription(mod.description || "");
     setIsPublished(mod.is_published);
@@ -203,7 +203,6 @@ export default function AdminModules() {
       await supabase
         .from("modules")
         .update({
-          week_number: weekNumber,
           title,
           description,
           is_published: isPublished,
@@ -217,7 +216,7 @@ export default function AdminModules() {
         .delete()
         .eq("module_id", editingModule.id);
 
-      // Insert sections baru
+      // Insert sections baru (jika ada yang punya title)
       const validSections = sections.filter((s) => s.title);
       if (validSections.length > 0) {
         await supabase.from("module_sections").insert(
@@ -228,20 +227,27 @@ export default function AdminModules() {
           })),
         );
       }
+
+      setSuccessMsg("Modul berhasil disimpan! ✅");
+      await fetchModules();
+      setSaving(false);
+      setView("list");
+      setTimeout(() => setSuccessMsg(""), 3000);
     } else {
-      // Cek apakah minggu sudah ada
-      const existing = modules.find((m) => m.week_number === weekNumber);
-      if (existing) {
-        setErrorMsg("Modul minggu " + weekNumber + " sudah ada!");
-        setSaving(false);
-        return;
-      }
+      // Buat modul baru dengan week_number otomatis (berdasarkan urutan dibuat)
+      const maxWeekModule =
+        modules.length > 0
+          ? modules.reduce((max, m) =>
+              m.week_number > max.week_number ? m : max
+            )
+          : null;
+      const nextWeek = maxWeekModule ? maxWeekModule.week_number + 1 : 1;
 
       // Buat modul baru
       const { data: newModule, error } = await supabase
         .from("modules")
         .insert({
-          week_number: weekNumber,
+          week_number: nextWeek,
           title,
           description,
           is_published: isPublished,
@@ -256,7 +262,7 @@ export default function AdminModules() {
         return;
       }
 
-      // Insert sections
+      // Insert sections (hanya jika ada yang punya title)
       const validSections = sections.filter((s) => s.title);
       if (validSections.length > 0) {
         await supabase.from("module_sections").insert(
@@ -267,13 +273,53 @@ export default function AdminModules() {
           })),
         );
       }
-    }
 
-    setSuccessMsg("Modul berhasil disimpan! ✅");
-    await fetchModules();
-    setSaving(false);
-    setView("list");
-    setTimeout(() => setSuccessMsg(""), 3000);
+      // Upload file jika ada file yang dipilih
+      if (selectedFile && fileTitle) {
+        try {
+          const fileExt = selectedFile.name.split(".").pop();
+          const filePath = newModule.id + "/" + Date.now() + "." + fileExt;
+
+          const { error: uploadError } = await supabase.storage
+            .from("modules")
+            .upload(filePath, selectedFile);
+
+          if (!uploadError) {
+            await supabase.from("module_files").insert({
+              module_id: newModule.id,
+              week_number: nextWeek,
+              title: fileTitle,
+              description: fileDesc,
+              file_name: selectedFile.name,
+              file_path: filePath,
+              file_type: selectedFile.type,
+              file_size: selectedFile.size,
+              uploaded_by: user?.id,
+            });
+            setSuccessMsg(
+              "Modul dan file berhasil dibuat! ✅ File akan segera tersedia.",
+            );
+          } else {
+            setSuccessMsg("Modul dibuat, tapi file gagal diupload. ⚠️");
+          }
+        } catch (err) {
+          setSuccessMsg("Modul dibuat, tapi ada error upload file. ⚠️");
+        }
+      } else {
+        setSuccessMsg("Modul berhasil dibuat! ✅");
+      }
+
+      // Reset form
+      setSelectedFile(null);
+      setFileTitle("");
+      setFileDesc("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      await fetchModules();
+      setSaving(false);
+      setView("list");
+      setTimeout(() => setSuccessMsg(""), 3000);
+    }
   };
 
   const handleUploadFile = async () => {
@@ -288,7 +334,7 @@ export default function AdminModules() {
       data: { user },
     } = await supabase.auth.getUser();
     const fileExt = selectedFile.name.split(".").pop();
-    const filePath = "week-" + weekNumber + "/" + Date.now() + "." + fileExt;
+    const filePath = editingModule.id + "/" + Date.now() + "." + fileExt;
 
     const { error: uploadError } = await supabase.storage
       .from("modules")
@@ -302,7 +348,7 @@ export default function AdminModules() {
 
     await supabase.from("module_files").insert({
       module_id: editingModule.id,
-      week_number: weekNumber,
+      week_number: editingModule.week_number,
       title: fileTitle,
       description: fileDesc,
       file_name: selectedFile.name,
@@ -371,21 +417,6 @@ export default function AdminModules() {
         <div className={styles.formCard}>
           <h2 className={styles.sectionLabel}>📋 Informasi Modul</h2>
           <div className={styles.formGrid}>
-            <div className={styles.inputGroup}>
-              <label className={styles.label}>Minggu ke- *</label>
-              <select
-                value={weekNumber}
-                onChange={(e) => setWeekNumber(Number(e.target.value))}
-                className={styles.select}
-                disabled={view === "edit"}
-              >
-                {Array.from({ length: 16 }, (_, i) => i + 1).map((w) => (
-                  <option key={w} value={w}>
-                    Minggu {w}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className={styles.inputGroup}>
               <label className={styles.label}>Status</label>
               <div className={styles.toggleRow}>
@@ -617,9 +648,75 @@ export default function AdminModules() {
         )}
 
         {view === "create" && (
-          <div className={styles.noteCard}>
-            💡 Setelah modul dibuat, kamu bisa upload file lampiran dengan klik
-            tombol Edit pada modul.
+          <div className={styles.formCard}>
+            <h2 className={styles.sectionLabel}>📎 File & Lampiran (Opsional)</h2>
+            <div className={styles.uploadSection}>
+              <h3 className={styles.uploadTitle}>Upload File Saat Membuat Modul</h3>
+              <div className={styles.uploadGrid}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>Judul File</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Slide Pertemuan 1"
+                    value={fileTitle}
+                    onChange={(e) => setFileTitle(e.target.value)}
+                    className={styles.input}
+                  />
+                </div>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>Deskripsi</label>
+                  <input
+                    type="text"
+                    placeholder="Deskripsi singkat..."
+                    value={fileDesc}
+                    onChange={(e) => setFileDesc(e.target.value)}
+                    className={styles.input}
+                  />
+                </div>
+              </div>
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
+                  Pilih File (PDF, Word, PowerPoint)
+                </label>
+                <div className={styles.fileDropzone}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx"
+                    onChange={(e) =>
+                      setSelectedFile(e.target.files?.[0] || null)
+                    }
+                    className={styles.fileInput}
+                    id="fileUploadCreate"
+                  />
+                  <label htmlFor="fileUploadCreate" className={styles.fileLabel}>
+                    {selectedFile ? (
+                      <div className={styles.fileSelected}>
+                        <span>{getFileIcon(selectedFile.type)}</span>
+                        <div>
+                          <div className={styles.fileSelectedName}>
+                            {selectedFile.name}
+                          </div>
+                          <div className={styles.fileSelectedSize}>
+                            {formatSize(selectedFile.size)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={styles.filePlaceholder}>
+                        <span className={styles.fileUploadIcon}>📂</span>
+                        <div className={styles.fileUploadText}>
+                          Klik untuk pilih file
+                        </div>
+                        <div className={styles.fileUploadHint}>
+                          PDF, Word, PowerPoint (maks 50MB)
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

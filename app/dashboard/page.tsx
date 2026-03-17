@@ -20,7 +20,7 @@ const quickMenus = [
     color: "#8b5cf6",
   },
   {
-    href: "/dashboard/exam",
+    href: "/dashboard/exams",
     icon: "📝",
     label: "Ujian",
     desc: "Kerjakan ujian online",
@@ -35,21 +35,16 @@ const quickMenus = [
   },
 ];
 
-const moduleNames: Record<number, string> = {
-  1: "Pengenalan Pemrograman",
-  2: "Variabel & Tipe Data",
-  3: "Percabangan",
-  4: "Perulangan",
-  5: "Fungsi & Prosedur",
-  6: "Array & List",
-  7: "String Manipulation",
-  8: "OOP Dasar",
-};
-
 interface ModuleProgress {
   week_number: number;
   is_completed: boolean;
   last_accessed: string;
+}
+
+interface DbModule {
+  id: string;
+  week_number: number;
+  title: string;
 }
 
 interface UserType {
@@ -60,6 +55,7 @@ interface UserType {
 export default function DashboardHome() {
   const [user, setUser] = useState<UserType | null>(null);
   const [moduleProgress, setModuleProgress] = useState<ModuleProgress[]>([]);
+  const [dbModules, setDbModules] = useState<DbModule[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,33 +67,38 @@ export default function DashboardHome() {
       if (!user) return;
       setUser(user);
 
-      const { data } = await supabase
+      const { data: progressData } = await supabase
         .from("module_progress")
         .select("week_number, is_completed, last_accessed")
         .eq("user_id", user.id)
         .order("week_number");
+      if (progressData) setModuleProgress(progressData);
 
-      if (data) setModuleProgress(data);
+      const { data: modulesData } = await supabase
+        .from("modules")
+        .select("id, week_number, title")
+        .eq("is_published", true)
+        .order("week_number")
+        .limit(4);
+      if (modulesData) setDbModules(modulesData);
+
       setLoading(false);
     };
     fetchData();
   }, []);
 
   const completedCount = moduleProgress.filter((p) => p.is_completed).length;
-  const totalModules = 8;
+  const totalModules = dbModules.length || 1;
   const overallProgress = Math.round((completedCount / totalModules) * 100);
-
-  const recentModules = Array.from({ length: 4 }, (_, i) => i + 1).map(
-    (week) => {
-      const p = moduleProgress.find((p) => p.week_number === week);
-      let progress = 0;
-      if (p) progress = p.is_completed ? 100 : 50;
-      return { week, title: moduleNames[week], progress };
-    },
-  );
-
   const firstName =
     user?.user_metadata?.full_name?.split(" ")[0] || "Mahasiswa";
+
+  const recentModules = dbModules.map((mod) => {
+    const p = moduleProgress.find((p) => p.week_number === mod.week_number);
+    let progress = 0;
+    if (p) progress = p.is_completed ? 100 : 50;
+    return { week: mod.week_number, title: mod.title, progress };
+  });
 
   return (
     <div className={styles.page}>
@@ -158,25 +159,49 @@ export default function DashboardHome() {
           </Link>
         </div>
         <div className={styles.moduleList}>
-          {recentModules.map((mod) => (
-            <Link
-              key={mod.week}
-              href={"/dashboard/modules/" + String(mod.week)}
-              className={styles.moduleCard}
+          {loading ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "1.5rem",
+                color: "#94a3b8",
+                fontSize: "0.9rem",
+              }}
             >
-              <div className={styles.moduleWeek}>Minggu {mod.week}</div>
-              <div className={styles.moduleTitle}>{mod.title}</div>
-              <div className={styles.moduleProgress}>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: String(mod.progress) + "%" }}
-                  />
+              Memuat modul...
+            </div>
+          ) : recentModules.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "1.5rem",
+                color: "#94a3b8",
+                fontSize: "0.9rem",
+              }}
+            >
+              Belum ada modul yang dipublikasikan
+            </div>
+          ) : (
+            recentModules.map((mod) => (
+              <Link
+                key={mod.week}
+                href={"/dashboard/modules/" + String(mod.week)}
+                className={styles.moduleCard}
+              >
+                <div className={styles.moduleWeek}>Minggu {mod.week}</div>
+                <div className={styles.moduleTitle}>{mod.title}</div>
+                <div className={styles.moduleProgress}>
+                  <div className={styles.progressBar}>
+                    <div
+                      className={styles.progressFill}
+                      style={{ width: String(mod.progress) + "%" }}
+                    />
+                  </div>
+                  <span className={styles.progressText}>{mod.progress}%</span>
                 </div>
-                <span className={styles.progressText}>{mod.progress}%</span>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -12,6 +12,10 @@ interface Exam {
   created_at: string;
 }
 
+interface ExamWithStats extends Exam {
+  completedCount?: number;
+}
+
 interface Question {
   question_text: string;
   rubric: string;
@@ -19,7 +23,7 @@ interface Question {
 }
 
 export default function AdminExams() {
-  const [exams, setExams] = useState<Exam[]>([]);
+  const [exams, setExams] = useState<ExamWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,6 +40,7 @@ export default function AdminExams() {
   );
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -44,7 +49,23 @@ export default function AdminExams() {
         .from("exams")
         .select("*")
         .order("created_at", { ascending: false });
-      if (data) setExams(data);
+
+      if (data) {
+        // Fetch completed count for each exam
+        const examsWithStats = await Promise.all(
+          data.map(async (exam) => {
+            const { count } = await supabase
+              .from("exam_results")
+              .select("*", { count: "exact", head: true })
+              .eq("exam_id", exam.id);
+            return {
+              ...exam,
+              completedCount: count || 0,
+            };
+          }),
+        );
+        setExams(examsWithStats);
+      }
       setLoading(false);
     };
     fetchExams();
@@ -56,7 +77,23 @@ export default function AdminExams() {
       .from("exams")
       .select("*")
       .order("created_at", { ascending: false });
-    if (data) setExams(data);
+
+    if (data) {
+      // Fetch completed count for each exam
+      const examsWithStats = await Promise.all(
+        data.map(async (exam) => {
+          const { count } = await supabase
+            .from("exam_results")
+            .select("*", { count: "exact", head: true })
+            .eq("exam_id", exam.id);
+          return {
+            ...exam,
+            completedCount: count || 0,
+          };
+        }),
+      );
+      setExams(examsWithStats);
+    }
   };
 
   const handleSave = async () => {
@@ -111,6 +148,33 @@ export default function AdminExams() {
       .update({ is_active: !current })
       .eq("id", examId);
     await refetchExams();
+  };
+
+  const deleteExam = async (examId: string, examTitle: string) => {
+    const confirmDelete = window.confirm(
+      `Apakah Anda yakin ingin menghapus ujian "${examTitle}"?\n\nTindakan ini tidak dapat dibatalkan dan akan menghapus:\n- Ujian\n- Semua soal\n- Semua jawaban siswa\n- Semua hasil ujian siswa`,
+    );
+
+    if (!confirmDelete) return;
+
+    setDeleting(examId);
+    const supabase = createClient();
+
+    try {
+      // Delete in order: answers -> exam_results -> questions -> exam
+      await supabase.from("answers").delete().eq("exam_id", examId);
+      await supabase.from("exam_results").delete().eq("exam_id", examId);
+      await supabase.from("questions").delete().eq("exam_id", examId);
+      await supabase.from("exams").delete().eq("id", examId);
+
+      setSuccessMsg("Ujian berhasil dihapus! ✅");
+      await refetchExams();
+      setTimeout(() => setSuccessMsg(""), 3000);
+    } catch (error) {
+      alert("Gagal menghapus ujian!");
+    } finally {
+      setDeleting(null);
+    }
   };
 
   return (
@@ -248,6 +312,9 @@ export default function AdminExams() {
                   Dibuat:{" "}
                   {new Date(exam.created_at).toLocaleDateString("id-ID")}
                 </div>
+                <div className={styles.examStats}>
+                  👥 {exam.completedCount} siswa telah menyelesaikan ujian ini
+                </div>
               </div>
               <div className={styles.examActions}>
                 <span
@@ -260,6 +327,13 @@ export default function AdminExams() {
                   className={styles.toggleBtn}
                 >
                   {exam.is_active ? "Nonaktifkan" : "Aktifkan"}
+                </button>
+                <button
+                  onClick={() => deleteExam(exam.id, exam.title)}
+                  disabled={deleting === exam.id}
+                  className={styles.deleteBtn}
+                >
+                  {deleting === exam.id ? "⏳ Menghapus..." : "🗑️ Hapus"}
                 </button>
               </div>
             </div>

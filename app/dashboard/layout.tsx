@@ -9,7 +9,7 @@ const navItems = [
   { href: "/dashboard", icon: "🏠", label: "Beranda" },
   { href: "/dashboard/modules", icon: "📚", label: "Modul Materi" },
   { href: "/dashboard/chat", icon: "🤖", label: "AI Tutor" },
-  { href: "/dashboard/exam", icon: "📝", label: "Ujian" },
+  { href: "/dashboard/exams", icon: "📝", label: "Ujian" },
   { href: "/dashboard/progress", icon: "📊", label: "Progress" },
   { href: "/dashboard/code", icon: "💻", label: "Code Runner" },
 ];

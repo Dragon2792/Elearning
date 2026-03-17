@@ -4,21 +4,16 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import styles from "./progress.module.css";
 
-const moduleNames: Record<number, string> = {
-  1: "Pengenalan Pemrograman",
-  2: "Variabel & Tipe Data",
-  3: "Percabangan",
-  4: "Perulangan",
-  5: "Fungsi & Prosedur",
-  6: "Array & List",
-  7: "String Manipulation",
-  8: "OOP Dasar",
-};
-
 interface ModuleProgress {
   week_number: number;
   is_completed: boolean;
   last_accessed: string;
+}
+
+interface DbModule {
+  id: string;
+  week_number: number;
+  title: string;
 }
 
 interface ExamResult {
@@ -31,15 +26,15 @@ interface ExamResult {
 
 export default function ProgressPage() {
   const [moduleProgress, setModuleProgress] = useState<ModuleProgress[]>([]);
+  const [dbModules, setDbModules] = useState<DbModule[]>([]);
   const [examResults, setExamResults] = useState<ExamResult[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProgress = async () => {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const authResult = await supabase.auth.getUser();
+      const user = authResult.data.user;
       if (!user) return;
 
       const { data: mProgress } = await supabase
@@ -47,15 +42,22 @@ export default function ProgressPage() {
         .select("*")
         .eq("user_id", user.id)
         .order("week_number");
+      if (mProgress) setModuleProgress(mProgress);
+
+      const { data: modules } = await supabase
+        .from("modules")
+        .select("id, week_number, title")
+        .eq("is_published", true)
+        .order("week_number");
+      if (modules) setDbModules(modules);
 
       const { data: eResults } = await supabase
         .from("exam_results")
         .select("*, exams(title, topic)")
         .eq("user_id", user.id)
         .order("completed_at", { ascending: false });
-
-      if (mProgress) setModuleProgress(mProgress);
       if (eResults) setExamResults(eResults as ExamResult[]);
+
       setLoading(false);
     };
     fetchProgress();
@@ -70,7 +72,7 @@ export default function ProgressPage() {
 
   const completedModules = moduleProgress.filter((p) => p.is_completed).length;
   const accessedModules = moduleProgress.length;
-  const totalModules = 8;
+  const totalModules = dbModules.length || 1;
   const overallProgress = Math.round((completedModules / totalModules) * 100);
   const passedExams = examResults.filter((e) => e.passed).length;
   const avgExamScore =
@@ -86,11 +88,10 @@ export default function ProgressPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Progress Belajar 📊</h1>
+        <h1 className={styles.pageTitle}>Progress Belajar</h1>
         <p className={styles.pageSubtitle}>Pantau perkembangan belajar kamu</p>
       </div>
 
-      {/* Stats */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
           <div className={styles.statIcon} style={{ background: "#6366f1" }}>
@@ -134,7 +135,6 @@ export default function ProgressPage() {
         </div>
       </div>
 
-      {/* Overall Progress */}
       <div className={styles.overallCard}>
         <div className={styles.overallHeader}>
           <h2 className={styles.overallTitle}>Progress Keseluruhan</h2>
@@ -143,91 +143,101 @@ export default function ProgressPage() {
         <div className={styles.overallBar}>
           <div
             className={styles.overallFill}
-            style={{ width: `${overallProgress}%` }}
+            style={{ width: String(overallProgress) + "%" }}
           />
         </div>
         <p className={styles.overallDesc}>
           {completedModules === 0
-            ? "Mulai belajar modul pertama sekarang! 🚀"
+            ? "Mulai belajar modul pertama sekarang!"
             : completedModules === totalModules
-              ? "🎉 Selamat! Kamu telah menyelesaikan semua modul!"
-              : `Kamu sudah menyelesaikan ${completedModules} dari ${totalModules} modul. Terus semangat!`}
+              ? "Selamat! Kamu telah menyelesaikan semua modul!"
+              : "Kamu sudah menyelesaikan " +
+                completedModules +
+                " dari " +
+                totalModules +
+                " modul. Terus semangat!"}
         </p>
       </div>
 
-      {/* Module Progress */}
       <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>📚 Progress Modul</h2>
+        <h2 className={styles.sectionTitle}>Progress Modul</h2>
         <div className={styles.moduleList}>
-          {Array.from({ length: totalModules }, (_, i) => i + 1).map((week) => {
-            const { status, progress } = getModuleStatus(week);
-            const lastAccess = moduleProgress.find(
-              (p) => p.week_number === week,
-            )?.last_accessed;
-            return (
-              <div key={week} className={styles.moduleCard}>
-                <div className={styles.moduleLeft}>
-                  <div
-                    className={`${styles.moduleIcon} ${
-                      status === "selesai"
-                        ? styles.iconCompleted
-                        : status === "diakses"
-                          ? styles.iconAccessed
-                          : styles.iconPending
-                    }`}
-                  >
-                    {status === "selesai"
-                      ? "✅"
-                      : status === "diakses"
-                        ? "📖"
-                        : "🔒"}
-                  </div>
-                  <div>
-                    <div className={styles.moduleWeek}>Minggu {week}</div>
-                    <div className={styles.moduleTitle}>
-                      {moduleNames[week]}
-                    </div>
-                    {lastAccess && (
-                      <div className={styles.moduleDate}>
-                        Terakhir diakses:{" "}
-                        {new Date(lastAccess).toLocaleDateString("id-ID")}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className={styles.moduleRight}>
-                  <div className={styles.progressBar}>
+          {dbModules.length === 0 ? (
+            <div
+              style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}
+            >
+              Belum ada modul yang dipublikasikan
+            </div>
+          ) : (
+            dbModules.map((mod) => {
+              const { status, progress } = getModuleStatus(mod.week_number);
+              const lastAccess = moduleProgress.find(
+                (p) => p.week_number === mod.week_number,
+              )?.last_accessed;
+              return (
+                <div key={mod.id} className={styles.moduleCard}>
+                  <div className={styles.moduleLeft}>
                     <div
-                      className={styles.progressFill}
-                      style={{ width: `${progress}%` }}
-                    />
+                      className={
+                        status === "selesai"
+                          ? styles.moduleIcon + " " + styles.iconCompleted
+                          : status === "diakses"
+                            ? styles.moduleIcon + " " + styles.iconAccessed
+                            : styles.moduleIcon + " " + styles.iconPending
+                      }
+                    >
+                      {status === "selesai"
+                        ? "✅"
+                        : status === "diakses"
+                          ? "📖"
+                          : "🔒"}
+                    </div>
+                    <div>
+                      <div className={styles.moduleWeek}>
+                        Minggu {mod.week_number}
+                      </div>
+                      <div className={styles.moduleTitle}>{mod.title}</div>
+                      {lastAccess && (
+                        <div className={styles.moduleDate}>
+                          Terakhir diakses:{" "}
+                          {new Date(lastAccess).toLocaleDateString("id-ID")}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className={styles.progressPct}>{progress}%</span>
-                  <Link
-                    href={`/dashboard/modules/${week}`}
-                    className={styles.studyLink}
-                  >
-                    {status === "selesai"
-                      ? "Ulang"
-                      : status === "diakses"
-                        ? "Lanjut"
-                        : "Mulai"}
-                  </Link>
+                  <div className={styles.moduleRight}>
+                    <div className={styles.progressBar}>
+                      <div
+                        className={styles.progressFill}
+                        style={{ width: String(progress) + "%" }}
+                      />
+                    </div>
+                    <span className={styles.progressPct}>{progress}%</span>
+                    <Link
+                      href={"/dashboard/modules/" + String(mod.week_number)}
+                      className={styles.studyLink}
+                    >
+                      {status === "selesai"
+                        ? "Ulang"
+                        : status === "diakses"
+                          ? "Lanjut"
+                          : "Mulai"}
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
-      {/* Exam Results */}
       <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>📝 Riwayat Ujian</h2>
+        <h2 className={styles.sectionTitle}>Riwayat Ujian</h2>
         {examResults.length === 0 ? (
           <div className={styles.emptyExam}>
             <p>Belum ada ujian yang dikerjakan.</p>
-            <Link href="/dashboard/exam" className={styles.examLink}>
-              Mulai Ujian Sekarang →
+            <Link href="/dashboard/exams" className={styles.examLink}>
+              Mulai Ujian Sekarang
             </Link>
           </div>
         ) : (
@@ -237,9 +247,7 @@ export default function ProgressPage() {
                 <div className={styles.examInfo}>
                   <div className={styles.examTitle}>{result.exams?.title}</div>
                   {result.exams?.topic && (
-                    <div className={styles.examTopic}>
-                      📚 {result.exams.topic}
-                    </div>
+                    <div className={styles.examTopic}>{result.exams.topic}</div>
                   )}
                   <div className={styles.examDate}>
                     {new Date(result.completed_at).toLocaleDateString("id-ID", {
@@ -253,14 +261,22 @@ export default function ProgressPage() {
                 </div>
                 <div className={styles.examScore}>
                   <div
-                    className={`${styles.scoreBig} ${result.passed ? styles.scorePass : styles.scoreFail}`}
+                    className={
+                      result.passed
+                        ? styles.scoreBig + " " + styles.scorePass
+                        : styles.scoreBig + " " + styles.scoreFail
+                    }
                   >
                     {result.total_score}
                   </div>
                   <span
-                    className={`${styles.passBadge} ${result.passed ? styles.passed : styles.failed}`}
+                    className={
+                      result.passed
+                        ? styles.passBadge + " " + styles.passed
+                        : styles.passBadge + " " + styles.failed
+                    }
                   >
-                    {result.passed ? "✅ Lulus" : "❌ Belum Lulus"}
+                    {result.passed ? "Lulus" : "Belum Lulus"}
                   </span>
                 </div>
               </div>

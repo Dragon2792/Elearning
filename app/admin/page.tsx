@@ -15,6 +15,7 @@ interface Stats {
   totalUsers: number;
   totalAdmins: number;
   newUsersToday: number;
+  totalModules: number;
 }
 
 export default function AdminOverview() {
@@ -22,6 +23,7 @@ export default function AdminOverview() {
     totalUsers: 0,
     totalAdmins: 0,
     newUsersToday: 0,
+    totalModules: 0,
   });
   const [recentUsers, setRecentUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,11 @@ export default function AdminOverview() {
         .select("*")
         .order("created_at", { ascending: false });
 
+      const { count: moduleCount } = await supabase
+        .from("modules")
+        .select("*", { count: "exact", head: true })
+        .eq("is_published", true);
+
       if (profiles) {
         const today = new Date().toISOString().split("T")[0];
         setStats({
@@ -42,6 +49,7 @@ export default function AdminOverview() {
           totalAdmins: profiles.filter((p) => p.role === "admin").length,
           newUsersToday: profiles.filter((p) => p.created_at?.startsWith(today))
             .length,
+          totalModules: moduleCount || 0,
         });
         setRecentUsers(profiles.slice(0, 5));
       }
@@ -69,7 +77,12 @@ export default function AdminOverview() {
       value: stats.newUsersToday,
       color: "#ec4899",
     },
-    { icon: "📚", label: "Total Modul", value: 8, color: "#f59e0b" },
+    {
+      icon: "📚",
+      label: "Modul Dipublikasikan",
+      value: stats.totalModules,
+      color: "#f59e0b",
+    },
   ];
 
   return (
@@ -81,7 +94,6 @@ export default function AdminOverview() {
         </p>
       </div>
 
-      {/* Stat Cards */}
       <div className={styles.statsGrid}>
         {statCards.map((card) => (
           <div key={card.label} className={styles.statCard}>
@@ -98,7 +110,6 @@ export default function AdminOverview() {
         ))}
       </div>
 
-      {/* Recent Users */}
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>User Terbaru</h2>
@@ -140,7 +151,11 @@ export default function AdminOverview() {
                     <td className={styles.emailCell}>{user.email}</td>
                     <td>
                       <span
-                        className={`${styles.roleBadge} ${user.role === "admin" ? styles.adminRole : styles.studentRole}`}
+                        className={
+                          user.role === "admin"
+                            ? styles.adminRole
+                            : styles.studentRole
+                        }
                       >
                         {user.role === "admin" ? "⚙️ Admin" : "🎓 Student"}
                       </span>

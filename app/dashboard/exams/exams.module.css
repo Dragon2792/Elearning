@@ -43,10 +43,40 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   border: 1px solid #f1f5f9;
   transition: box-shadow 0.2s;
+  position: relative;
 }
 
 .examCard:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.completedCard {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.lockedCard {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  opacity: 0.8;
+}
+
+.completedBadge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #10b981;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.lockedBadge {
+  background: #8b5cf6;
 }
 
 .examCardIcon {
@@ -86,6 +116,33 @@
   font-weight: 500;
 }
 
+.scoreInfo {
+  display: inline-block;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.passedScore {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.failedScore {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.lockedInfo {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.4rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
 .startBtn {
   padding: 0.75rem 1.5rem;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
@@ -102,6 +159,24 @@
 
 .startBtn:hover {
   opacity: 0.9;
+}
+
+.retakeBtn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.retakeBtn:hover {
+  opacity: 0.9;
+}
+
+.disabledBtn {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.disabledBtn:hover {
+  opacity: 0.7;
 }
 
 /* EXAM HEADER */

@@ -3,68 +3,17 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./modules.module.css";
 
-const allModules = [
-  {
-    week: 1,
-    title: "Pengenalan Pemrograman",
-    desc: "Algoritma, flowchart, pseudocode, dan konsep dasar pemrograman",
-    topics: ["Algoritma", "Flowchart", "Pseudocode", "Lingkungan Pemrograman"],
-    duration: "2 jam",
-  },
-  {
-    week: 2,
-    title: "Variabel & Tipe Data",
-    desc: "Mengenal variabel, konstanta, dan berbagai tipe data dalam pemrograman",
-    topics: ["Integer", "Float", "String", "Boolean", "Deklarasi Variabel"],
-    duration: "2 jam",
-  },
-  {
-    week: 3,
-    title: "Percabangan",
-    desc: "Struktur kontrol percabangan untuk pengambilan keputusan",
-    topics: ["if", "if-else", "else-if", "switch-case", "Operator Logika"],
-    duration: "3 jam",
-  },
-  {
-    week: 4,
-    title: "Perulangan",
-    desc: "Struktur perulangan untuk mengeksekusi kode berulang kali",
-    topics: ["for loop", "while loop", "do-while", "break", "continue"],
-    duration: "3 jam",
-  },
-  {
-    week: 5,
-    title: "Fungsi & Prosedur",
-    desc: "Membuat dan menggunakan fungsi untuk kode yang lebih modular",
-    topics: ["Definisi Fungsi", "Parameter", "Return Value", "Rekursi"],
-    duration: "3 jam",
-  },
-  {
-    week: 6,
-    title: "Array & List",
-    desc: "Struktur data array dan list untuk menyimpan kumpulan data",
-    topics: ["Array 1D", "Array 2D", "List", "Operasi Array"],
-    duration: "3 jam",
-  },
-  {
-    week: 7,
-    title: "String Manipulation",
-    desc: "Teknik pengolahan dan manipulasi teks/string",
-    topics: ["Konkatenasi", "Slicing", "Built-in Methods", "Format String"],
-    duration: "2 jam",
-  },
-  {
-    week: 8,
-    title: "OOP Dasar",
-    desc: "Konsep dasar Object Oriented Programming",
-    topics: ["Class", "Object", "Method", "Atribut", "Enkapsulasi"],
-    duration: "4 jam",
-  },
-];
-
 interface ModuleProgress {
   week_number: number;
   is_completed: boolean;
+}
+
+interface DbModule {
+  id: string;
+  week_number: number;
+  title: string;
+  description: string;
+  is_published: boolean;
 }
 
 const statusConfig = {
@@ -89,30 +38,42 @@ export default function ModulesPage() {
   const [filter, setFilter] = useState("all");
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
   const [progress, setProgress] = useState<ModuleProgress[]>([]);
+  const [dbModules, setDbModules] = useState<DbModule[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProgress = async () => {
+    const fetchData = async () => {
       const supabase = createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
+
+      const { data: progressData } = await supabase
         .from("module_progress")
         .select("week_number, is_completed")
         .eq("user_id", user.id);
-      if (data) setProgress(data);
+      if (progressData) setProgress(progressData);
+
+      const { data: modulesData } = await supabase
+        .from("modules")
+        .select("id, week_number, title, description, is_published")
+        .eq("is_published", true)
+        .order("week_number");
+      if (modulesData) setDbModules(modulesData);
+
       setLoading(false);
     };
-    fetchProgress();
+    fetchData();
   }, []);
 
   const getModuleStatus = (
     week: number,
   ): "completed" | "in-progress" | "locked" => {
     const isAccessible =
-      week === 1 || progress.some((p) => p.week_number === week - 1);
+      week === dbModules[0]?.week_number ||
+      progress.some((p) => p.week_number === week - 1) ||
+      dbModules.findIndex((m) => m.week_number === week) === 0;
     if (!isAccessible) return "locked";
     const found = progress.find((p) => p.week_number === week);
     if (!found) return "in-progress";
@@ -127,35 +88,30 @@ export default function ModulesPage() {
     return 0;
   };
 
-  const completedCount = allModules.filter(
-    (m) => getModuleStatus(m.week) === "completed",
+  const completedCount = dbModules.filter(
+    (m) => getModuleStatus(m.week_number) === "completed",
   ).length;
-  const inProgressCount = allModules.filter(
-    (m) => getModuleStatus(m.week) === "in-progress",
+  const inProgressCount = dbModules.filter(
+    (m) => getModuleStatus(m.week_number) === "in-progress",
   ).length;
-  const totalProgress = Math.round((completedCount / allModules.length) * 100);
+  const totalProgress =
+    dbModules.length > 0
+      ? Math.round((completedCount / dbModules.length) * 100)
+      : 0;
 
-  const filtered = allModules.filter((m) => {
+  const filtered = dbModules.filter((m) => {
     const matchSearch =
       m.title.toLowerCase().includes(search.toLowerCase()) ||
-      m.topics.some((t) => t.toLowerCase().includes(search.toLowerCase()));
-    const status = getModuleStatus(m.week);
+      m.description?.toLowerCase().includes(search.toLowerCase());
+    const status = getModuleStatus(m.week_number);
     const matchFilter = filter === "all" || filter === status;
     return matchSearch && matchFilter;
   });
 
-  const renderTopicsSection = (mod: (typeof allModules)[0], status: string) => {
+  const renderTopicsSection = (mod: DbModule, status: string) => {
     if (status === "locked") {
       return (
         <div className={styles.topicsSection}>
-          <div className={styles.topicsTitle}>Topik yang dipelajari:</div>
-          <div className={styles.topicsList}>
-            {mod.topics.map((topic) => (
-              <span key={topic} className={styles.topicChip}>
-                {topic}
-              </span>
-            ))}
-          </div>
           <div className={styles.lockedMsg}>
             Selesaikan modul sebelumnya untuk membuka modul ini
           </div>
@@ -164,17 +120,9 @@ export default function ModulesPage() {
     }
     return (
       <div className={styles.topicsSection}>
-        <div className={styles.topicsTitle}>Topik yang dipelajari:</div>
-        <div className={styles.topicsList}>
-          {mod.topics.map((topic) => (
-            <span key={topic} className={styles.topicChip}>
-              {topic}
-            </span>
-          ))}
-        </div>
         <div className={styles.cardActions}>
           <a
-            href={"/dashboard/modules/" + String(mod.week)}
+            href={"/dashboard/modules/" + String(mod.week_number)}
             className={styles.studyBtn}
           >
             {status === "completed"
@@ -195,7 +143,9 @@ export default function ModulesPage() {
         <div className={styles.statCard}>
           <span className={styles.statIcon}>📚</span>
           <div>
-            <div className={styles.statValue}>{allModules.length}</div>
+            <div className={styles.statValue}>
+              {loading ? "..." : dbModules.length}
+            </div>
             <div className={styles.statLabel}>Total Modul</div>
           </div>
         </div>
@@ -233,7 +183,7 @@ export default function ModulesPage() {
           <span className={styles.searchIcon}>🔍</span>
           <input
             type="text"
-            placeholder="Cari modul atau topik..."
+            placeholder="Cari modul..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={styles.searchInput}
@@ -257,60 +207,81 @@ export default function ModulesPage() {
       </div>
 
       <div className={styles.moduleGrid}>
-        {filtered.map((mod) => {
-          const status = getModuleStatus(mod.week);
-          const progressPct = getProgressPct(mod.week);
-          const statusInfo = statusConfig[status];
-          const isExpanded = expandedWeek === mod.week;
-          const cardClass =
-            status === "locked"
-              ? styles.moduleCard + " " + styles.locked
-              : styles.moduleCard;
+        {loading ? (
+          <div
+            style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}
+          >
+            Memuat modul...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div
+            style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}
+          >
+            {dbModules.length === 0
+              ? "Belum ada modul yang dipublikasikan"
+              : "Tidak ada modul ditemukan"}
+          </div>
+        ) : (
+          filtered.map((mod) => {
+            const status = getModuleStatus(mod.week_number);
+            const progressPct = getProgressPct(mod.week_number);
+            const statusInfo = statusConfig[status];
+            const isExpanded = expandedWeek === mod.week_number;
+            const cardClass =
+              status === "locked"
+                ? styles.moduleCard + " " + styles.locked
+                : styles.moduleCard;
 
-          return (
-            <div key={mod.week} className={cardClass}>
-              <div
-                className={styles.cardHeader}
-                onClick={() => setExpandedWeek(isExpanded ? null : mod.week)}
-              >
-                <div className={styles.weekBadge}>Minggu {mod.week}</div>
-                <div className={styles.cardMeta}>
-                  <h3 className={styles.cardTitle}>{mod.title}</h3>
-                  <p className={styles.cardDesc}>{mod.desc}</p>
-                </div>
-                <div className={styles.cardRight}>
-                  <span
-                    className={styles.statusBadge}
-                    style={{
-                      color: statusInfo.color,
-                      background: statusInfo.bg,
-                    }}
-                  >
-                    {statusInfo.label}
-                  </span>
-                  <span className={styles.duration}>{mod.duration}</span>
-                  <span className={styles.expandIcon}>
-                    {isExpanded ? "▲" : "▼"}
-                  </span>
-                </div>
-              </div>
-
-              {status !== "locked" && (
-                <div className={styles.progressRow}>
-                  <div className={styles.progressBar}>
-                    <div
-                      className={styles.progressFill}
-                      style={{ width: String(progressPct) + "%" }}
-                    />
+            return (
+              <div key={mod.id} className={cardClass}>
+                <div
+                  className={styles.cardHeader}
+                  onClick={() =>
+                    setExpandedWeek(isExpanded ? null : mod.week_number)
+                  }
+                >
+                  <div className={styles.weekBadge}>
+                    Minggu {mod.week_number}
                   </div>
-                  <span className={styles.progressText}>{progressPct}%</span>
+                  <div className={styles.cardMeta}>
+                    <h3 className={styles.cardTitle}>{mod.title}</h3>
+                    {mod.description && (
+                      <p className={styles.cardDesc}>{mod.description}</p>
+                    )}
+                  </div>
+                  <div className={styles.cardRight}>
+                    <span
+                      className={styles.statusBadge}
+                      style={{
+                        color: statusInfo.color,
+                        background: statusInfo.bg,
+                      }}
+                    >
+                      {statusInfo.label}
+                    </span>
+                    <span className={styles.expandIcon}>
+                      {isExpanded ? "▲" : "▼"}
+                    </span>
+                  </div>
                 </div>
-              )}
 
-              {isExpanded && renderTopicsSection(mod, status)}
-            </div>
-          );
-        })}
+                {status !== "locked" && (
+                  <div className={styles.progressRow}>
+                    <div className={styles.progressBar}>
+                      <div
+                        className={styles.progressFill}
+                        style={{ width: String(progressPct) + "%" }}
+                      />
+                    </div>
+                    <span className={styles.progressText}>{progressPct}%</span>
+                  </div>
+                )}
+
+                {isExpanded && renderTopicsSection(mod, status)}
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

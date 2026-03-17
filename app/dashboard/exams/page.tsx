@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import styles from "./exam.module.css";
+import { CONFIG } from "@/lib/config/constants";
+import styles from "./exams.module.css";
 
 interface Exam {
   id: string;
@@ -23,9 +24,18 @@ interface GradeResult {
   passed: boolean;
 }
 
+interface ExamResultData {
+  [examId: string]: {
+    total_score: number;
+    passed: boolean;
+    attempts: number;
+  };
+}
+
 export default function ExamPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [completedExams, setCompletedExams] = useState<ExamResultData>({});
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [grading, setGrading] = useState(false);
@@ -37,18 +47,64 @@ export default function ExamPage() {
   useEffect(() => {
     const fetchExams = async () => {
       const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       const { data } = await supabase
         .from("exams")
         .select("*")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
+
       if (data) setExams(data);
+
+      // Fetch exam results for current user
+      if (user) {
+        const { data: results } = await supabase
+          .from("exam_results")
+          .select("exam_id, total_score, passed")
+          .eq("user_id", user.id);
+
+        if (results) {
+          const resultMap: ExamResultData = {};
+          results.forEach((result) => {
+            if (!resultMap[result.exam_id]) {
+              resultMap[result.exam_id] = {
+                total_score: result.total_score,
+                passed: result.passed,
+                attempts: 0,
+              };
+            }
+            resultMap[result.exam_id].attempts += 1;
+          });
+          setCompletedExams(resultMap);
+        }
+      }
+
       setLoading(false);
     };
     fetchExams();
   }, []);
 
   const selectExam = async (exam: Exam) => {
+    // Check if exam already completed
+    if (completedExams[exam.id]) {
+      const attempts = completedExams[exam.id].attempts;
+
+      if (attempts >= CONFIG.MAX_EXAM_ATTEMPTS) {
+        alert(
+          `Ujian "${exam.title}" sudah selesai.\n\nAnda tidak bisa mengerjakan ujian ini lagi.`,
+        );
+        return;
+      }
+
+      const confirmRetake = window.confirm(
+        `Ujian "${exam.title}" sudah diselesaikan dengan skor ${completedExams[exam.id].total_score}/100.\n\nAnda hanya bisa mengerjakan ulang 1 kali. Apakah Anda ingin melanjutkan?`,
+      );
+      if (!confirmRetake) return;
+    }
+
     setSelectedExam(exam);
     setSubmitted(false);
     setResults({});
@@ -110,7 +166,7 @@ export default function ExamPage() {
       exam_id: selectedExam!.id,
       user_id: user?.id,
       total_score: avg,
-      passed: avg >= 70,
+      passed: avg >= CONFIG.PASSING_SCORE,
     });
 
     setResults(gradeResults);
@@ -125,19 +181,19 @@ export default function ExamPage() {
     return (
       <div className={styles.page}>
         <div
-          className={`${styles.resultHeader} ${totalScore >= 70 ? styles.passed : styles.failed}`}
+          className={`${styles.resultHeader} ${totalScore >= CONFIG.PASSING_SCORE ? styles.passed : styles.failed}`}
         >
           <div className={styles.resultIcon}>
-            {totalScore >= 70 ? "🎉" : "📚"}
+            {totalScore >= CONFIG.PASSING_SCORE ? "🎉" : "📚"}
           </div>
           <h1 className={styles.resultTitle}>
-            {totalScore >= 70 ? "Selamat! Kamu Lulus!" : "Belum Lulus"}
+            {totalScore >= CONFIG.PASSING_SCORE ? "Selamat! Kamu Lulus!" : "Belum Lulus"}
           </h1>
           <div className={styles.resultScore}>{totalScore}/100</div>
           <p className={styles.resultSubtitle}>
-            {totalScore >= 70
-              ? "Jawaban kamu relevan ≥70% berdasarkan rubrik dosen"
-              : "Skor kamu di bawah 70. Pelajari lagi materinya ya!"}
+            {totalScore >= CONFIG.PASSING_SCORE
+              ? `Jawaban kamu relevan ≥${CONFIG.PASSING_SCORE}% berdasarkan rubrik dosen`
+              : `Skor kamu di bawah ${CONFIG.PASSING_SCORE}. Pelajari lagi materinya ya!`}
           </p>
         </div>
 
@@ -149,7 +205,7 @@ export default function ExamPage() {
                 <div className={styles.detailHeader}>
                   <span className={styles.detailNum}>Soal {i + 1}</span>
                   <span
-                    className={`${styles.scoreChip} ${result?.score >= 70 ? styles.scorePass : styles.scoreFail}`}
+                    className={`${styles.scoreChip} ${result?.score >= CONFIG.PASSING_SCORE ? styles.scorePass : styles.scoreFail}`}
                   >
                     {result?.score}/100
                   </span>
@@ -203,7 +259,7 @@ export default function ExamPage() {
           <div className={styles.examMeta}>
             <span>📝 {questions.length} Soal</span>
             <span>⏱️ Tidak ada batas waktu</span>
-            <span>✅ Lulus jika skor ≥70</span>
+            <span>✅ Lulus jika skor ≥{CONFIG.PASSING_SCORE}</span>
           </div>
         </div>
 
@@ -254,30 +310,62 @@ export default function ExamPage() {
         </div>
       ) : (
         <div className={styles.examGrid}>
-          {exams.map((exam) => (
-            <div key={exam.id} className={styles.examCard}>
-              <div className={styles.examCardIcon}>📝</div>
-              <div className={styles.examCardInfo}>
-                <h3 className={styles.examCardTitle}>{exam.title}</h3>
-                {exam.topic && (
-                  <p className={styles.examCardTopic}>📚 {exam.topic}</p>
-                )}
-                {exam.description && (
-                  <p className={styles.examCardDesc}>{exam.description}</p>
-                )}
-                <div className={styles.examCardMeta}>
-                  <span>10 Soal</span>
-                  <span>Lulus ≥70%</span>
-                </div>
-              </div>
-              <button
-                onClick={() => selectExam(exam)}
-                className={styles.startBtn}
+          {exams.map((exam) => {
+            const isCompleted = completedExams[exam.id];
+            const isLocked = isCompleted && isCompleted.attempts >= CONFIG.MAX_EXAM_ATTEMPTS;
+            return (
+              <div
+                key={exam.id}
+                className={`${styles.examCard} ${isCompleted ? styles.completedCard : ""} ${isLocked ? styles.lockedCard : ""}`}
               >
-                Mulai Ujian →
-              </button>
-            </div>
-          ))}
+                {isCompleted && (
+                  <div
+                    className={`${styles.completedBadge} ${isLocked ? styles.lockedBadge : ""}`}
+                  >
+                    {isLocked ? "🔒 Terkunci" : "✅ Selesai"}
+                  </div>
+                )}
+                <div className={styles.examCardIcon}>📝</div>
+                <div className={styles.examCardInfo}>
+                  <h3 className={styles.examCardTitle}>{exam.title}</h3>
+                  {exam.topic && (
+                    <p className={styles.examCardTopic}>📚 {exam.topic}</p>
+                  )}
+                  {exam.description && (
+                    <p className={styles.examCardDesc}>{exam.description}</p>
+                  )}
+                  <div className={styles.examCardMeta}>
+                    <span>10 Soal</span>
+                    <span>Lulus ≥{CONFIG.PASSING_SCORE}%</span>
+                  </div>
+                  {isCompleted && (
+                    <div
+                      className={`${styles.scoreInfo} ${isCompleted.passed ? styles.passedScore : styles.failedScore}`}
+                    >
+                      Skor: {isCompleted.total_score}/100
+                      {isCompleted.passed ? " ✨ LULUS" : " 📚 Belum Lulus"}
+                      {isLocked && (
+                        <div className={styles.lockedInfo}>
+                          (Ujian sudah selesai - tidak bisa diakses lagi)
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => selectExam(exam)}
+                  disabled={isLocked}
+                  className={`${styles.startBtn} ${isCompleted && !isLocked ? styles.retakeBtn : ""} ${isLocked ? styles.disabledBtn : ""}`}
+                >
+                  {isLocked
+                    ? "Selesai"
+                    : isCompleted
+                      ? "Ulang Ujian →"
+                      : "Mulai Ujian →"}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
