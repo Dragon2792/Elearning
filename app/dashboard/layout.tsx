@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { ErrorBoundary } from "@/lib/components/ErrorBoundary";
 import styles from "./dash.module.css";
 
 const navItems = [
@@ -110,7 +111,9 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className={styles.content}>{children}</main>
+        <main className={styles.content}>
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </main>
       </div>
     </div>
   );
