@@ -61,14 +61,10 @@ function validateNumber(
   return errors;
 }
 
-export function validateGradeRequest(
-  data: any,
-): ValidationResult {
+export function validateGradeRequest(data: any): ValidationResult {
   const errors: ValidationError[] = [];
 
-  errors.push(
-    ...validateString(data.question, "question", 1, 5000),
-  );
+  errors.push(...validateString(data.question, "question", 1, 5000));
   errors.push(...validateString(data.rubric, "rubric", 1, 5000));
   errors.push(...validateString(data.answer, "answer", 1, 10000));
 
@@ -78,9 +74,7 @@ export function validateGradeRequest(
   };
 }
 
-export function validateRunCodeRequest(
-  data: any,
-): ValidationResult {
+export function validateRunCodeRequest(data: any): ValidationResult {
   const errors: ValidationError[] = [];
   const validLanguages = [
     "python",
@@ -112,9 +106,7 @@ export function validateRunCodeRequest(
   };
 }
 
-export function validateChatRequest(
-  data: any,
-): ValidationResult {
+export function validateChatRequest(data: any): ValidationResult {
   const errors: ValidationError[] = [];
 
   if (!Array.isArray(data.messages)) {

@@ -99,7 +99,12 @@ export async function saveExamResult(
   examId: string,
   userId: string | undefined,
   totalScore: number,
-  answers: Array<{ question_id: string; answer_text: string; score: number; feedback: string }>,
+  answers: Array<{
+    question_id: string;
+    answer_text: string;
+    score: number;
+    feedback: string;
+  }>,
 ): Promise<boolean> {
   if (!userId) return false;
 

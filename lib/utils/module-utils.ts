@@ -119,9 +119,7 @@ export async function fetchModuleFiles(
  */
 export function getModuleFilePublicUrl(filePath: string): string {
   const supabase = createClient();
-  const { data } = supabase.storage
-    .from("modules")
-    .getPublicUrl(filePath);
+  const { data } = supabase.storage.from("modules").getPublicUrl(filePath);
   return data.publicUrl;
 }
 
@@ -146,9 +144,7 @@ export function formatFileSize(bytes: number): string {
 /**
  * Track module access/progress
  */
-export async function trackModuleAccess(
-  weekNumber: number,
-): Promise<boolean> {
+export async function trackModuleAccess(weekNumber: number): Promise<boolean> {
   try {
     const supabase = createClient();
     const { data: authResult } = await supabase.auth.getUser();

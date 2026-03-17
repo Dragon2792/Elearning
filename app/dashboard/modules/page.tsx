@@ -70,11 +70,18 @@ export default function ModulesPage() {
   const getModuleStatus = (
     week: number,
   ): "completed" | "in-progress" | "locked" => {
-    const isAccessible =
-      week === dbModules[0]?.week_number ||
-      progress.some((p) => p.week_number === week - 1) ||
-      dbModules.findIndex((m) => m.week_number === week) === 0;
+    // First module is always accessible
+    const isFirstModule = dbModules.length > 0 && week === dbModules[0]?.week_number;
+
+    // Module is accessible if previous module was COMPLETED (not just accessed)
+    const isPreviousCompleted = progress.some(
+      (p) => p.week_number === week - 1 && p.is_completed === true,
+    );
+
+    const isAccessible = isFirstModule || isPreviousCompleted;
+
     if (!isAccessible) return "locked";
+
     const found = progress.find((p) => p.week_number === week);
     if (!found) return "in-progress";
     if (found.is_completed) return "completed";

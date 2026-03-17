@@ -26,7 +26,8 @@ export function logError(
     context,
     timestamp: new Date().toISOString(),
     url: typeof window !== "undefined" ? window.location.href : undefined,
-    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+    userAgent:
+      typeof navigator !== "undefined" ? navigator.userAgent : undefined,
   };
 
   ERROR_LOGS.push(log);

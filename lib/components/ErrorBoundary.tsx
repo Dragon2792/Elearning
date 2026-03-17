@@ -43,15 +43,13 @@ export class ErrorBoundary extends Component<Props, State> {
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
-              ⚠️
-            </div>
+            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⚠️</div>
             <h2 style={{ color: "#1e293b", marginBottom: "0.5rem" }}>
               Terjadi Kesalahan
             </h2>
             <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
-              Maaf, ada kesalahan saat memuat halaman ini. Silakan coba
-              refresh atau hubungi administrator.
+              Maaf, ada kesalahan saat memuat halaman ini. Silakan coba refresh
+              atau hubungi administrator.
             </p>
             {this.state.error && (
               <details
