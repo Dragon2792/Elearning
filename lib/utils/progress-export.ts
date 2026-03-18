@@ -119,9 +119,7 @@ export function generateProgressSummary(data: ProgressExportData[]): {
 
   const completedModules = Array.from(
     new Set(
-      data
-        .filter((d) => d.status === "completed")
-        .map((d) => d.module_name),
+      data.filter((d) => d.status === "completed").map((d) => d.module_name),
     ),
   );
 

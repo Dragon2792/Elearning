@@ -71,7 +71,8 @@ export default function ModulesPage() {
     week: number,
   ): "completed" | "in-progress" | "locked" => {
     // First module is always accessible
-    const isFirstModule = dbModules.length > 0 && week === dbModules[0]?.week_number;
+    const isFirstModule =
+      dbModules.length > 0 && week === dbModules[0]?.week_number;
 
     // Module is accessible if previous module was COMPLETED (not just accessed)
     const isPreviousCompleted = progress.some(

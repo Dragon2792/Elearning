@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -74,13 +74,12 @@ export default function DashboardHome() {
         .order("week_number");
       if (progressData) setModuleProgress(progressData);
 
-      const { data: modulesData } = await supabase
+      const { data: allModulesData } = await supabase
         .from("modules")
         .select("id, week_number, title")
         .eq("is_published", true)
-        .order("week_number")
-        .limit(4);
-      if (modulesData) setDbModules(modulesData);
+        .order("week_number");
+      if (allModulesData) setDbModules(allModulesData);
 
       setLoading(false);
     };
@@ -93,7 +92,7 @@ export default function DashboardHome() {
   const firstName =
     user?.user_metadata?.full_name?.split(" ")[0] || "Mahasiswa";
 
-  const recentModules = dbModules.map((mod) => {
+  const recentModules = dbModules.slice(0, 4).map((mod) => {
     const p = moduleProgress.find((p) => p.week_number === mod.week_number);
     let progress = 0;
     if (p) progress = p.is_completed ? 100 : 50;

@@ -10,14 +10,17 @@ export async function createClient() {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          if (typeof cookieStore.getAll === "function") {
+            return cookieStore.getAll();
+          }
+          return [];
         },
         setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
-          } catch {}
+          if (typeof cookieStore.set === "function") {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          }
         },
       },
     },

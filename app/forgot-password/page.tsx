@@ -99,8 +99,8 @@ export default function ForgotPasswordPage() {
             </div>
 
             <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>
-              Link reset password berlaku selama 1 jam. Jika belum menerima email,
-              cek folder spam atau{" "}
+              Link reset password berlaku selama 1 jam. Jika belum menerima
+              email, cek folder spam atau{" "}
               <button
                 onClick={() => setSubmitted(false)}
                 style={{
@@ -188,9 +188,15 @@ export default function ForgotPasswordPage() {
               </div>
             </div>
 
-            <p style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-              Kami akan mengirimkan link untuk mengatur password baru ke email ini.
-              Link berlaku selama 1 jam.
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "0.9rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              Kami akan mengirimkan link untuk mengatur password baru ke email
+              ini. Link berlaku selama 1 jam.
             </p>
 
             <button

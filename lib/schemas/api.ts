@@ -14,7 +14,7 @@ export interface ValidationResult {
 }
 
 function validateString(
-  value: any,
+  value: unknown,
   field: string,
   min?: number,
   max?: number,
@@ -38,7 +38,7 @@ function validateString(
 }
 
 function validateNumber(
-  value: any,
+  value: unknown,
   field: string,
   min?: number,
   max?: number,
@@ -61,12 +61,19 @@ function validateNumber(
   return errors;
 }
 
-export function validateGradeRequest(data: any): ValidationResult {
+export function validateGradeRequest(data: unknown): ValidationResult {
   const errors: ValidationError[] = [];
+  if (typeof data !== "object" || data === null) {
+    return {
+      valid: false,
+      errors: [{ field: "data", message: "Data tidak valid" }],
+    };
+  }
+  const body = data as Record<string, unknown>;
 
-  errors.push(...validateString(data.question, "question", 1, 5000));
-  errors.push(...validateString(data.rubric, "rubric", 1, 5000));
-  errors.push(...validateString(data.answer, "answer", 1, 10000));
+  errors.push(...validateString(body.question, "question", 1, 5000));
+  errors.push(...validateString(body.rubric, "rubric", 1, 5000));
+  errors.push(...validateString(body.answer, "answer", 1, 10000));
 
   return {
     valid: errors.length === 0,
@@ -74,8 +81,18 @@ export function validateGradeRequest(data: any): ValidationResult {
   };
 }
 
-export function validateRunCodeRequest(data: any): ValidationResult {
+export function validateRunCodeRequest(data: unknown): ValidationResult {
   const errors: ValidationError[] = [];
+  if (typeof data !== "object" || data === null) {
+    return {
+      valid: false,
+      errors: [{ field: "data", message: "Data tidak valid" }],
+    };
+  }
+  const body = data as Record<string, unknown>;
+
+  errors.push(...validateString(body.code, "code", 1, 10000));
+
   const validLanguages = [
     "python",
     "javascript",
@@ -87,16 +104,17 @@ export function validateRunCodeRequest(data: any): ValidationResult {
     "rust",
   ];
 
-  errors.push(...validateString(data.code, "code", 1, 10000));
-
-  if (!validLanguages.includes(data.language)) {
+  if (
+    typeof body.language !== "string" ||
+    !validLanguages.includes(body.language)
+  ) {
     errors.push({
       field: "language",
       message: `language harus salah satu dari: ${validLanguages.join(", ")}`,
     });
   }
 
-  if (data.stdin && typeof data.stdin !== "string") {
+  if (body.stdin && typeof body.stdin !== "string") {
     errors.push({ field: "stdin", message: "stdin harus berupa string" });
   }
 
@@ -106,10 +124,17 @@ export function validateRunCodeRequest(data: any): ValidationResult {
   };
 }
 
-export function validateChatRequest(data: any): ValidationResult {
+export function validateChatRequest(data: unknown): ValidationResult {
   const errors: ValidationError[] = [];
+  if (typeof data !== "object" || data === null) {
+    return {
+      valid: false,
+      errors: [{ field: "data", message: "Data tidak valid" }],
+    };
+  }
+  const body = data as Record<string, unknown>;
 
-  if (!Array.isArray(data.messages)) {
+  if (!Array.isArray(body.messages)) {
     errors.push({
       field: "messages",
       message: "messages harus berupa array",
@@ -117,26 +142,34 @@ export function validateChatRequest(data: any): ValidationResult {
     return { valid: false, errors };
   }
 
-  if (data.messages.length === 0) {
+  if (body.messages.length === 0) {
     errors.push({
       field: "messages",
       message: "messages minimal 1 pesan",
     });
   }
 
-  data.messages.forEach((msg: any, idx: number) => {
-    if (!["user", "assistant"].includes(msg.role)) {
+  body.messages.forEach((msg: unknown, idx: number) => {
+    if (typeof msg !== "object" || msg === null) {
+      errors.push({
+        field: `messages[${idx}]`,
+        message: "Pesan harus berupa objek",
+      });
+      return;
+    }
+    const message = msg as Record<string, unknown>;
+    if (!["user", "assistant"].includes(message.role as string)) {
       errors.push({
         field: `messages[${idx}].role`,
         message: "role harus 'user' atau 'assistant'",
       });
     }
     errors.push(
-      ...validateString(msg.content, `messages[${idx}].content`, 1, 5000),
+      ...validateString(message.content, `messages[${idx}].content`, 1, 5000),
     );
   });
 
-  if (data.topic && typeof data.topic !== "string") {
+  if (body.topic && typeof body.topic !== "string") {
     errors.push({ field: "topic", message: "topic harus berupa string" });
   }
 

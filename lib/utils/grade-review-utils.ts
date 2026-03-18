@@ -52,9 +52,10 @@ export async function fetchUnreviewedAnswers(
 
     return data.map((answer) => ({
       ...answer,
-      user_email: (answer.profiles as any)?.email,
-      user_name: (answer.profiles as any)?.full_name,
-      question_text: (answer.questions as any)?.question_text,
+      user_email: (answer.profiles as { email?: string } | null)?.email,
+      user_name: (answer.profiles as { full_name?: string } | null)?.full_name,
+      question_text: (answer.questions as { question_text?: string } | null)
+        ?.question_text,
     }));
   } catch (error) {
     console.error("Failed to fetch unreviewed answers:", error);
@@ -85,9 +86,10 @@ export async function fetchAnswersForExam(
 
     return data.map((answer) => ({
       ...answer,
-      user_email: (answer.profiles as any)?.email,
-      user_name: (answer.profiles as any)?.full_name,
-      question_text: (answer.questions as any)?.question_text,
+      user_email: (answer.profiles as { email?: string } | null)?.email,
+      user_name: (answer.profiles as { full_name?: string } | null)?.full_name,
+      question_text: (answer.questions as { question_text?: string } | null)
+        ?.question_text,
     }));
   } catch (error) {
     console.error("Failed to fetch exam answers:", error);
@@ -119,7 +121,8 @@ export async function fetchStudentAnswers(
 
     return data.map((answer) => ({
       ...answer,
-      question_text: (answer.questions as any)?.question_text,
+      question_text: (answer.questions as { question_text?: string } | null)
+        ?.question_text,
     }));
   } catch (error) {
     console.error("Failed to fetch student answers:", error);
@@ -185,9 +188,7 @@ export function calculateStudentExamScore(answers: StudentAnswer[]): number {
   if (answers.length === 0) return 0;
 
   const scores = answers.map((a) => getFinalScore(a));
-  const average = Math.round(
-    scores.reduce((a, b) => a + b, 0) / scores.length,
-  );
+  const average = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
 
   return average;
 }
@@ -208,6 +209,7 @@ export function getReviewStats(answers: StudentAnswer[]): {
     total: answers.length,
     reviewed,
     pending,
-    percentReviewed: answers.length > 0 ? Math.round((reviewed / answers.length) * 100) : 0,
+    percentReviewed:
+      answers.length > 0 ? Math.round((reviewed / answers.length) * 100) : 0,
   };
 }
