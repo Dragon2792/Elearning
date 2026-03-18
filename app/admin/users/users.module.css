@@ -185,3 +185,20 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Tambahkan agar tabel user bisa digulir ke samping di mode HP */
+.userTableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+.userTable {
+  min-width: 600px;
+  width: 100%;
+  border-collapse: collapse;
+}
+.userTable th,
+.userTable td {
+  padding: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+}
