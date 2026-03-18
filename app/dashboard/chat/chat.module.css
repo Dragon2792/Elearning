@@ -184,6 +184,8 @@
   border-radius: 16px;
   font-size: 0.9rem;
   line-height: 1.6;
+  overflow-x: auto;
+  word-break: break-word;
 }
 
 .userBubble .messageContent {
@@ -197,12 +199,14 @@
   color: #1e293b;
   border: 1px solid #e2e8f0;
   border-bottom-left-radius: 4px;
+  overflow-x: auto;
+  word-break: break-word;
 }
 
 .codeBlock {
   background: #1e293b;
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
   margin: 0.5rem 0;
   width: 100%;
 }
