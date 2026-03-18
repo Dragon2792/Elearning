@@ -78,7 +78,7 @@ export default function ResetPasswordPage() {
           router.push("/login");
         }, 2000);
       }
-    } catch (err) {
+    } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
       setLoading(false);
     }
