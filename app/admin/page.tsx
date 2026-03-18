@@ -115,59 +115,61 @@ export default function AdminOverview() {
           <h2 className={styles.sectionTitle}>User Terbaru</h2>
         </div>
         <div className={styles.tableCard}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Nama</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Bergabung</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
                 <tr>
-                  <td colSpan={4} className={styles.loadingRow}>
-                    Memuat data...
-                  </td>
+                  <th>Nama</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Bergabung</th>
                 </tr>
-              ) : recentUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className={styles.loadingRow}>
-                    Belum ada user
-                  </td>
-                </tr>
-              ) : (
-                recentUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <div className={styles.userCell}>
-                        <div className={styles.avatar}>
-                          {user.full_name?.[0]?.toUpperCase() || "?"}
-                        </div>
-                        {user.full_name || "-"}
-                      </div>
-                    </td>
-                    <td className={styles.emailCell}>{user.email}</td>
-                    <td>
-                      <span
-                        className={
-                          user.role === "admin"
-                            ? styles.adminRole
-                            : styles.studentRole
-                        }
-                      >
-                        {user.role === "admin" ? "⚙️ Admin" : "🎓 Student"}
-                      </span>
-                    </td>
-                    <td className={styles.dateCell}>
-                      {new Date(user.created_at).toLocaleDateString("id-ID")}
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className={styles.loadingRow}>
+                      Memuat data...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : recentUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className={styles.loadingRow}>
+                      Belum ada user
+                    </td>
+                  </tr>
+                ) : (
+                  recentUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td>
+                        <div className={styles.userCell}>
+                          <div className={styles.avatar}>
+                            {user.full_name?.[0]?.toUpperCase() || "?"}
+                          </div>
+                          {user.full_name || "-"}
+                        </div>
+                      </td>
+                      <td className={styles.emailCell}>{user.email}</td>
+                      <td>
+                        <span
+                          className={
+                            user.role === "admin"
+                              ? styles.adminRole
+                              : styles.studentRole
+                          }
+                        >
+                          {user.role === "admin" ? "⚙️ Admin" : "🎓 Student"}
+                        </span>
+                      </td>
+                      <td className={styles.dateCell}>
+                        {new Date(user.created_at).toLocaleDateString("id-ID")}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
