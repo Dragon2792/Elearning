@@ -357,47 +357,54 @@
 
 @media (max-width: 768px) {
   .chatArea {
-    padding: 0;
-    margin: 0;
+    padding: 0 !important;
+    margin: 0 !important;
     overflow-x: hidden;
-    width: 100vw;
-    max-width: 100vw;
+    width: 100vw !important;
+    max-width: 100vw !important;
     box-sizing: border-box;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff;
   }
   .messageList {
-    padding: 0.5rem 0.25rem;
+    padding: 0 !important;
+    margin: 0 !important;
     overflow-x: hidden;
-    width: 100vw;
-    max-width: 100vw;
+    width: 100vw !important;
+    max-width: 100vw !important;
     box-sizing: border-box;
   }
   .messageBubble {
-    max-width: 100%;
-    width: 100%;
-    min-width: 0;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    min-width: 0 !important;
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
   }
   .messageContent {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
     box-sizing: border-box;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding: 0.75rem 0.5rem !important;
+    border-radius: 0 !important;
   }
   .codeBlock {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
     box-sizing: border-box;
+    border-radius: 0 !important;
   }
   .codeBlock pre {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
     box-sizing: border-box;
+    border-radius: 0 !important;
   }
   .header {
     flex-direction: column;
@@ -405,11 +412,12 @@
   }
   .page {
     height: calc(100vh - 60px);
-    width: 100vw;
-    max-width: 100vw;
+    width: 100vw !important;
+    max-width: 100vw !important;
     box-sizing: border-box;
     overflow-x: hidden;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
   }
 }
