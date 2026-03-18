@@ -170,7 +170,7 @@ export default function AdminExams() {
       setSuccessMsg("Ujian berhasil dihapus! ✅");
       await refetchExams();
       setTimeout(() => setSuccessMsg(""), 3000);
-    } catch (error) {
+    } catch {
       alert("Gagal menghapus ujian!");
     } finally {
       setDeleting(null);
@@ -240,7 +240,7 @@ export default function AdminExams() {
             />
           </div>
 
-          <h3 className={styles.questionsTitle}>📋 10 Soal Ujian</h3>
+          <h3 className={styles.questionsTitle}>📋 Soal Ujian</h3>
           <div className={styles.questionsList}>
             {questions.map((q, i) => (
               <div key={i} className={styles.questionCard}>
@@ -277,6 +277,22 @@ export default function AdminExams() {
                 </div>
               </div>
             ))}
+            <button
+              className={styles.addBtn}
+              onClick={() =>
+                setQuestions([
+                  ...questions,
+                  {
+                    question_text: "",
+                    rubric: "",
+                    order_number: questions.length + 1,
+                  },
+                ])
+              }
+              type="button"
+            >
+              Tambah Soal
+            </button>
           </div>
 
           <button
