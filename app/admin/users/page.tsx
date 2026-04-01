@@ -76,69 +76,56 @@ export default function AdminUsers() {
       </div>
 
       <div className={styles.tableCard}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Nama</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Bergabung</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+        <div className={styles.userTableWrapper}>
+          <table className={styles.userTable}>
+            <thead>
               <tr>
-                <td colSpan={5} className={styles.loadingRow}>
-                  Memuat data...
-                </td>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Bergabung</th>
+                <th>Aksi</th>
               </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className={styles.loadingRow}>
-                  Tidak ada user ditemukan
-                </td>
-              </tr>
-            ) : (
-              filtered.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className={styles.userCell}>
-                      <div className={styles.avatar}>
-                        {user.full_name?.[0]?.toUpperCase() || "?"}
-                      </div>
-                      {user.full_name || "-"}
-                    </div>
-                  </td>
-                  <td className={styles.emailCell}>{user.email}</td>
-                  <td>
-                    <span
-                      className={`${styles.roleBadge} ${user.role === "admin" ? styles.adminRole : styles.studentRole}`}
-                    >
-                      {user.role === "admin" ? "⚙️ Admin" : "🎓 Student"}
-                    </span>
-                  </td>
-                  <td className={styles.dateCell}>
-                    {new Date(user.created_at).toLocaleDateString("id-ID")}
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => toggleRole(user.id, user.role)}
-                      disabled={updating === user.id}
-                      className={`${styles.roleBtn} ${user.role === "admin" ? styles.demoteBtn : styles.promoteBtn}`}
-                    >
-                      {updating === user.id
-                        ? "⏳"
-                        : user.role === "admin"
-                          ? "⬇️ Jadikan Student"
-                          : "⬆️ Jadikan Admin"}
-                    </button>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className={styles.loadingRow}>
+                    Memuat data...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className={styles.loadingRow}>
+                    Tidak ada user ditemukan
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((u) => (
+                  <tr key={u.id}>
+                    <td>{u.full_name}</td>
+                    <td>{u.email}</td>
+                    <td>{u.role}</td>
+                    <td>{new Date(u.created_at).toLocaleDateString()}</td>
+                    <td>
+                      <button
+                        className={styles.roleBtn}
+                        disabled={updating === u.id}
+                        onClick={() => toggleRole(u.id, u.role)}
+                      >
+                        {updating === u.id
+                          ? "..."
+                          : u.role === "admin"
+                            ? "Jadikan Student"
+                            : "Jadikan Admin"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

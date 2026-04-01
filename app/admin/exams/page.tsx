@@ -31,13 +31,13 @@ export default function AdminExams() {
     description: "",
     topic: "",
   });
-  const [questions, setQuestions] = useState<Question[]>(
-    Array.from({ length: 10 }, (_, i) => ({
+  const [questions, setQuestions] = useState<Question[]>([
+    {
       question_text: "",
       rubric: "",
-      order_number: i + 1,
-    })),
-  );
+      order_number: 1,
+    },
+  ]);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -98,11 +98,11 @@ export default function AdminExams() {
 
   const handleSave = async () => {
     if (!formData.title) return alert("Judul ujian wajib diisi!");
-    const emptyQ = questions.filter((q) => !q.question_text || !q.rubric);
-    if (emptyQ.length > 0)
-      return alert(
-        `Soal nomor ${emptyQ.map((q) => q.order_number).join(", ")} belum diisi!`,
-      );
+    const filledQuestions = questions.filter(
+      (q) => q.question_text.trim() && q.rubric.trim(),
+    );
+    if (filledQuestions.length === 0)
+      return alert("Minimal 1 soal harus diisi lengkap!");
 
     setSaving(true);
     const supabase = createClient();
@@ -122,20 +122,18 @@ export default function AdminExams() {
       return;
     }
 
-    await supabase
-      .from("questions")
-      .insert(questions.map((q) => ({ ...q, exam_id: exam.id })));
+    await supabase.from("questions").insert(
+      filledQuestions.map((q, i) => ({
+        ...q,
+        exam_id: exam.id,
+        order_number: i + 1,
+      })),
+    );
 
     setSuccessMsg("Ujian berhasil dibuat! ✅");
     setShowForm(false);
     setFormData({ title: "", description: "", topic: "" });
-    setQuestions(
-      Array.from({ length: 10 }, (_, i) => ({
-        question_text: "",
-        rubric: "",
-        order_number: i + 1,
-      })),
-    );
+    setQuestions([]);
     await refetchExams();
     setSaving(false);
     setTimeout(() => setSuccessMsg(""), 3000);
@@ -170,7 +168,7 @@ export default function AdminExams() {
       setSuccessMsg("Ujian berhasil dihapus! ✅");
       await refetchExams();
       setTimeout(() => setSuccessMsg(""), 3000);
-    } catch (error) {
+    } catch {
       alert("Gagal menghapus ujian!");
     } finally {
       setDeleting(null);
@@ -240,7 +238,7 @@ export default function AdminExams() {
             />
           </div>
 
-          <h3 className={styles.questionsTitle}>📋 10 Soal Ujian</h3>
+          <h3 className={styles.questionsTitle}>📋 Soal Ujian</h3>
           <div className={styles.questionsList}>
             {questions.map((q, i) => (
               <div key={i} className={styles.questionCard}>
@@ -277,6 +275,22 @@ export default function AdminExams() {
                 </div>
               </div>
             ))}
+            <button
+              className={styles.addBtn}
+              onClick={() =>
+                setQuestions([
+                  ...questions,
+                  {
+                    question_text: "",
+                    rubric: "",
+                    order_number: questions.length + 1,
+                  },
+                ])
+              }
+              type="button"
+            >
+              Tambah Soal
+            </button>
           </div>
 
           <button

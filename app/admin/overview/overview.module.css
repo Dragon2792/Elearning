@@ -1,0 +1,44 @@
+/* overview.module.css dipindahkan agar import tidak error */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+.table {
+  min-width: 900px;
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.table th {
+  background: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.table td {
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.875rem;
+  color: #374151;
+}
+.table tr:last-child td {
+  border-bottom: none;
+}
+.loadingRow {
+  text-align: center;
+  color: #94a3b8;
+  padding: 2rem !important;
+}

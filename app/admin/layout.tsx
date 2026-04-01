@@ -24,6 +24,7 @@ export default function AdminLayout({
     user_metadata?: { full_name?: string };
   } | null>(null);
   const [checking, setChecking] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -67,7 +68,15 @@ export default function AdminLayout({
 
   return (
     <div className={styles.layout}>
-      <aside className={styles.sidebar}>
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div className={styles.overlay} onClick={() => setSidebarOpen(false)} />
+      )}
+      <aside
+        className={
+          styles.sidebar + (sidebarOpen ? ` ${styles.sidebarOpen}` : "")
+        }
+      >
         <div className={styles.sidebarHeader}>
           <span className={styles.sidebarLogo}>⚡</span>
           <div>
@@ -82,6 +91,7 @@ export default function AdminLayout({
               key={item.href}
               href={item.href}
               className={`${styles.navItem} ${pathname === item.href ? styles.navItemActive : ""}`}
+              onClick={() => setSidebarOpen(false)}
             >
               <span className={styles.navIcon}>{item.icon}</span>
               <span>{item.label}</span>
@@ -101,23 +111,26 @@ export default function AdminLayout({
               <span className={styles.userRole}>Administrator</span>
             </div>
           </div>
-          <div className={styles.footerLinks}>
-            <Link href="/dashboard" className={styles.switchBtn}>
-              🎓 Student View
-            </Link>
-            <button onClick={handleLogout} className={styles.logoutBtn}>
-              🚪 Logout
-            </button>
-          </div>
+          <Link href="/dashboard" className={styles.switchBtn}>
+            🎓 Student View
+          </Link>
+          <button className={styles.logoutBtn} onClick={handleLogout}>
+            🚪 Logout
+          </button>
         </div>
       </aside>
 
       <div className={styles.main}>
         <header className={styles.topbar}>
-          <div className={styles.topbarTitle}>
-            {navItems.find((i) => i.href === pathname)?.label || "Admin"}
-          </div>
-          <div className={styles.adminTag}>⚙️ Admin Panel</div>
+          {/* Hamburger menu button */}
+          <button
+            className={styles.menuBtn}
+            onClick={() => setSidebarOpen(true)}
+          >
+            <span style={{ fontSize: "1.5rem" }}>☰</span>
+          </button>
+          <span className={styles.topbarTitle}>Admin Panel</span>
+          <span className={styles.adminTag}>Admin</span>
         </header>
         <main className={styles.content}>{children}</main>
       </div>
