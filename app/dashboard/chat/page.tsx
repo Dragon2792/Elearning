@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import styles from "./chat.module.css";
+// import React from "react"; // This line is already present in the file
 
 interface Message {
   role: "user" | "assistant";
@@ -27,28 +28,50 @@ const SAMPLE_QUESTIONS = [
   "Contoh penggunaan if-else dalam kasus nyata?",
 ];
 
-function formatMessage(text: string) {
-  const parts = text.split(/(```[\s\S]*?```)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("```")) {
-      const lines = part.split("\n");
-      const lang = lines[0].replace("```", "") || "code";
-      const code = lines.slice(1, -1).join("\n");
-      return (
-        <div key={i} className={styles.codeBlock}>
-          <div className={styles.codeLang}>{lang}</div>
-          <pre>
-            <code>{code}</code>
-          </pre>
-        </div>
-      );
-    }
-    return (
-      <span key={i} style={{ whiteSpace: "pre-wrap" }}>
-        {part}
-      </span>
-    );
-  });
+function formatMessage(text: string): (string | React.ReactNode)[] {
+  // 1. Split by code blocks to preserve them
+  const codeBlockRegex = /(```[\s\S]*?```)/g;
+  const parts = text.split(codeBlockRegex);
+
+  return parts
+    .flatMap((part, i) => {
+      // 2. If it's a code block, render it as a preformatted element
+      if (part.startsWith("```")) {
+        const lines = part.split("\n");
+        const lang = lines[0].replace("```", "").trim() || "code";
+        const code = lines.slice(1, -1).join("\n");
+        return [
+          <div key={`code-${i}`} className={styles.codeBlock}>
+            <div className={styles.codeLang}>{lang}</div>
+            <pre>
+              <code>{code}</code>
+            </pre>
+          </div>,
+        ];
+      }
+
+      // 3. If it's regular text, process for other markdown (bold, italic)
+      const markdownRegex = /(\*\*.*?\*\*|\*.*?\*)/g;
+      const textParts = part.split(markdownRegex);
+
+      return textParts.map((textPart, j) => {
+        if (textPart.startsWith("**") && textPart.endsWith("**")) {
+          return (
+            <strong key={`bold-${i}-${j}`}>{textPart.slice(2, -2)}</strong>
+          );
+        }
+        if (textPart.startsWith("*") && textPart.endsWith("*")) {
+          return <em key={`italic-${i}-${j}`}>{textPart.slice(1, -1)}</em>;
+        }
+        // Return plain text part, preserving whitespace for readability
+        return (
+          <span key={`text-${i}-${j}`} style={{ whiteSpace: "pre-wrap" }}>
+            {textPart}
+          </span>
+        );
+      });
+    })
+    .filter(Boolean); // Filter out any empty strings that result from splitting
 }
 
 export default function ChatPage() {

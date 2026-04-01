@@ -6,7 +6,7 @@
 export interface ErrorLog {
   message: string;
   error: Error | string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   timestamp: string;
   url?: string;
   userAgent?: string;
@@ -18,7 +18,7 @@ const MAX_LOGS = 100;
 export function logError(
   message: string,
   error: Error | string,
-  context?: Record<string, any>,
+  context?: Record<string, unknown>,
 ): void {
   const log: ErrorLog = {
     message,
@@ -57,7 +57,7 @@ export function clearErrorLogs(): void {
 /**
  * Wrap async functions to automatically log errors
  */
-export function withErrorLogging<T extends any[], R>(
+export function withErrorLogging<T extends unknown[], R>(
   fn: (...args: T) => Promise<R>,
   errorMessage: string,
 ) {

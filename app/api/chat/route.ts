@@ -39,41 +39,65 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Ambil semua modul & sections dari database
-    const { data: modules } = await supabase
+    // Ambil modul & sections dari database, filter berdasarkan topik jika ada
+
+    let query = supabase
       .from("modules")
       .select("id, week_number, title, description")
-      .eq("is_published", true)
-      .order("week_number");
+      .eq("is_published", true);
+
+    if (topic && topic !== "Semua Topik") {
+      // Gunakan ilike untuk pencarian case-insensitive yang mengandung kata topik
+      // Ini akan mencari topik di judul atau deskripsi modul
+      query = query.or(`title.ilike.%${topic}%,description.ilike.%${topic}%`);
+    }
+
+    const { data: modules } = await query.order("week_number");
 
     let moduleContext = "";
     let moduleSources = "";
 
     if (modules && modules.length > 0) {
       // Ambil sections dari semua modul
-      const moduleIds = modules.map((m) => m.id);
+      const moduleIds = modules.map((m: { id: string }) => m.id);
       const { data: sections } = await supabase
         .from("module_sections")
         .select("module_id, title, content, code_example, code_language")
         .in("module_id", moduleIds);
 
       // Susun context dari modul
-      modules.forEach((mod) => {
-        const modSections =
-          sections?.filter((s) => s.module_id === mod.id) || [];
-        if (modSections.length > 0) {
-          moduleContext += `\n=== Minggu ${mod.week_number}: ${mod.title} ===\n`;
-          if (mod.description)
-            moduleContext += `Deskripsi: ${mod.description}\n`;
-          modSections.forEach((sec) => {
-            if (sec.title) moduleContext += `\nBagian: ${sec.title}\n`;
-            if (sec.content) moduleContext += `Konten: ${sec.content}\n`;
-            if (sec.code_example)
-              moduleContext += `Contoh Kode (${sec.code_language}):\n${sec.code_example}\n`;
-          });
-        }
-        moduleSources += `- Minggu ${mod.week_number}: ${mod.title}\n`;
-      });
+      modules.forEach(
+        (mod: {
+          id: string;
+          week_number: number;
+          title: string;
+          description?: string;
+        }) => {
+          const modSections =
+            sections?.filter(
+              (s: { module_id: string }) => s.module_id === mod.id,
+            ) || [];
+          if (modSections.length > 0) {
+            moduleContext += `\n=== Minggu ${mod.week_number}: ${mod.title} ===\n`;
+            if (mod.description)
+              moduleContext += `Deskripsi: ${mod.description}\n`;
+            modSections.forEach(
+              (sec: {
+                title?: string;
+                content?: string;
+                code_example?: string;
+                code_language?: string;
+              }) => {
+                if (sec.title) moduleContext += `\nBagian: ${sec.title}\n`;
+                if (sec.content) moduleContext += `Konten: ${sec.content}\n`;
+                if (sec.code_example)
+                  moduleContext += `Contoh Kode (${sec.code_language}):\n${sec.code_example}\n`;
+              },
+            );
+          }
+          moduleSources += `- Minggu ${mod.week_number}: ${mod.title}\n`;
+        },
+      );
     }
 
     const hasModuleContent = moduleContext.length > 0;

@@ -37,26 +37,28 @@ export default function ProgressPage() {
       const user = authResult.data.user;
       if (!user) return;
 
-      const { data: mProgress } = await supabase
-        .from("module_progress")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("week_number");
-      if (mProgress) setModuleProgress(mProgress);
+      // Fetch all data in parallel for faster page load
+      const [mProgress, modules, eResults] = await Promise.all([
+        supabase
+          .from("module_progress")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("week_number"),
+        supabase
+          .from("modules")
+          .select("id, week_number, title")
+          .eq("is_published", true)
+          .order("week_number"),
+        supabase
+          .from("exam_results")
+          .select("*, exams(title, topic)")
+          .eq("user_id", user.id)
+          .order("completed_at", { ascending: false }),
+      ]);
 
-      const { data: modules } = await supabase
-        .from("modules")
-        .select("id, week_number, title")
-        .eq("is_published", true)
-        .order("week_number");
-      if (modules) setDbModules(modules);
-
-      const { data: eResults } = await supabase
-        .from("exam_results")
-        .select("*, exams(title, topic)")
-        .eq("user_id", user.id)
-        .order("completed_at", { ascending: false });
-      if (eResults) setExamResults(eResults as ExamResult[]);
+      if (mProgress.data) setModuleProgress(mProgress.data);
+      if (modules.data) setDbModules(modules.data);
+      if (eResults.data) setExamResults(eResults.data as ExamResult[]);
 
       setLoading(false);
     };

@@ -140,7 +140,13 @@ export default function AdminModules() {
     setTitle(mod.title);
     setDescription(mod.description || "");
     setIsPublished(mod.is_published);
-    const secs = await fetchSections(mod.id);
+
+    // Fetch sections and files in parallel for better performance
+    const [secs] = await Promise.all([
+      fetchSections(mod.id),
+      fetchModuleFiles(mod.id),
+    ]);
+
     setSections(
       secs.length > 0
         ? secs
@@ -154,7 +160,6 @@ export default function AdminModules() {
             },
           ],
     );
-    await fetchModuleFiles(mod.id);
     setView("edit");
     setErrorMsg("");
   };
@@ -191,6 +196,14 @@ export default function AdminModules() {
       setErrorMsg("Judul modul wajib diisi!");
       return;
     }
+    // Validasi minimal satu section harus punya title
+    const validSections = sections.filter(
+      (s) => s.title && s.title.trim() !== "",
+    );
+    if (validSections.length === 0) {
+      setErrorMsg("Minimal satu section wajib diisi judulnya!");
+      return;
+    }
     setSaving(true);
     setErrorMsg("");
     const supabase = createClient();
@@ -216,17 +229,14 @@ export default function AdminModules() {
         .delete()
         .eq("module_id", editingModule.id);
 
-      // Insert sections baru (jika ada yang punya title)
-      const validSections = sections.filter((s) => s.title);
-      if (validSections.length > 0) {
-        await supabase.from("module_sections").insert(
-          validSections.map((s, i) => ({
-            ...s,
-            module_id: editingModule.id,
-            order_number: i + 1,
-          })),
-        );
-      }
+      // Insert sections baru (sudah divalidasi minimal 1 ada title)
+      await supabase.from("module_sections").insert(
+        validSections.map((s, i) => ({
+          ...s,
+          module_id: editingModule.id,
+          order_number: i + 1,
+        })),
+      );
 
       setSuccessMsg("Modul berhasil disimpan! ✅");
       await fetchModules();
@@ -238,7 +248,7 @@ export default function AdminModules() {
       const maxWeekModule =
         modules.length > 0
           ? modules.reduce((max, m) =>
-              m.week_number > max.week_number ? m : max
+              m.week_number > max.week_number ? m : max,
             )
           : null;
       const nextWeek = maxWeekModule ? maxWeekModule.week_number + 1 : 1;
@@ -262,17 +272,14 @@ export default function AdminModules() {
         return;
       }
 
-      // Insert sections (hanya jika ada yang punya title)
-      const validSections = sections.filter((s) => s.title);
-      if (validSections.length > 0) {
-        await supabase.from("module_sections").insert(
-          validSections.map((s, i) => ({
-            ...s,
-            module_id: newModule.id,
-            order_number: i + 1,
-          })),
-        );
-      }
+      // Insert sections (sudah divalidasi minimal 1 ada title)
+      await supabase.from("module_sections").insert(
+        validSections.map((s, i) => ({
+          ...s,
+          module_id: newModule.id,
+          order_number: i + 1,
+        })),
+      );
 
       // Upload file jika ada file yang dipilih
       if (selectedFile && fileTitle) {
@@ -302,7 +309,7 @@ export default function AdminModules() {
           } else {
             setSuccessMsg("Modul dibuat, tapi file gagal diupload. ⚠️");
           }
-        } catch (err) {
+        } catch {
           setSuccessMsg("Modul dibuat, tapi ada error upload file. ⚠️");
         }
       } else {
@@ -649,9 +656,13 @@ export default function AdminModules() {
 
         {view === "create" && (
           <div className={styles.formCard}>
-            <h2 className={styles.sectionLabel}>📎 File & Lampiran (Opsional)</h2>
+            <h2 className={styles.sectionLabel}>
+              📎 File & Lampiran (Opsional)
+            </h2>
             <div className={styles.uploadSection}>
-              <h3 className={styles.uploadTitle}>Upload File Saat Membuat Modul</h3>
+              <h3 className={styles.uploadTitle}>
+                Upload File Saat Membuat Modul
+              </h3>
               <div className={styles.uploadGrid}>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Judul File</label>
@@ -689,7 +700,10 @@ export default function AdminModules() {
                     className={styles.fileInput}
                     id="fileUploadCreate"
                   />
-                  <label htmlFor="fileUploadCreate" className={styles.fileLabel}>
+                  <label
+                    htmlFor="fileUploadCreate"
+                    className={styles.fileLabel}
+                  >
                     {selectedFile ? (
                       <div className={styles.fileSelected}>
                         <span>{getFileIcon(selectedFile.type)}</span>

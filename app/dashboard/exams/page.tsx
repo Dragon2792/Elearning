@@ -9,6 +9,7 @@ interface Exam {
   title: string;
   description: string;
   topic: string;
+  questions: { count: number }[];
 }
 
 interface Question {
@@ -53,7 +54,7 @@ export default function ExamPage() {
 
       const { data } = await supabase
         .from("exams")
-        .select("*")
+        .select("*, questions(count)")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
@@ -129,50 +130,85 @@ export default function ExamPage() {
 
     setGrading(true);
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const gradeResults: Record<string, GradeResult> = {};
+    await supabase.auth.getUser();
 
-    for (const question of questions) {
-      const res = await fetch("/api/grade", {
+    try {
+      // Submit all answers to the secure server API
+      const res = await fetch("/api/dashboard/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          question: question.question_text,
-          rubric: question.rubric,
-          answer: answers[question.id],
+          examId: selectedExam!.id,
+          answers: answers,
         }),
       });
-      const grade = await res.json();
-      gradeResults[question.id] = grade;
 
-      await supabase.from("answers").insert({
-        exam_id: selectedExam!.id,
-        question_id: question.id,
-        user_id: user?.id,
-        answer_text: answers[question.id],
-        ai_score: grade.score,
-        ai_feedback: grade.feedback,
-      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal mengumpulkan ujian");
+      }
+
+      const normalizedResults: Record<string, GradeResult> = {};
+      if (Array.isArray(data.results)) {
+        data.results.forEach(
+          (r: {
+            question_id?: string;
+            score?: number;
+            feedback?: string;
+            passed?: boolean;
+          }) => {
+            if (r.question_id) {
+              normalizedResults[r.question_id] = {
+                score: r.score ?? 0,
+                feedback: r.feedback ?? "Tidak ada feedback.",
+                passed: r.passed ?? false,
+              };
+            }
+          },
+        );
+      } else if (data.results && typeof data.results === "object") {
+        Object.keys(data.results).forEach((key) => {
+          const r = data.results[key] as {
+            score?: number;
+            feedback?: string;
+            passed?: boolean;
+          };
+          normalizedResults[key] = {
+            score: r.score ?? 0,
+            feedback: r.feedback ?? "Tidak ada feedback.",
+            passed: r.passed ?? false,
+          };
+        });
+      }
+
+      setResults(normalizedResults);
+      setTotalScore(data.totalScore);
+      setSubmitted(true);
+
+      // Optimistically update the completed exams state to reflect the new attempt
+      if (selectedExam) {
+        setCompletedExams((prev) => {
+          const newAttempts = (prev[selectedExam.id]?.attempts || 0) + 1;
+          return {
+            ...prev,
+            [selectedExam.id]: {
+              total_score: data.totalScore,
+              passed: data.passed,
+              attempts: newAttempts,
+            },
+          };
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        alert("Terjadi kesalahan: " + error.message);
+      } else {
+        alert("Terjadi kesalahan yang tidak diketahui.");
+      }
+    } finally {
+      setGrading(false);
     }
-
-    const avg = Math.round(
-      Object.values(gradeResults).reduce((acc, r) => acc + r.score, 0) /
-        questions.length,
-    );
-
-    await supabase.from("exam_results").insert({
-      exam_id: selectedExam!.id,
-      user_id: user?.id,
-      total_score: avg,
-      passed: avg >= CONFIG.PASSING_SCORE,
-    });
-
-    setResults(gradeResults);
-    setTotalScore(avg);
-    setSubmitted(true);
-    setGrading(false);
   };
 
   if (loading) return <div className={styles.loading}>Memuat ujian...</div>;
@@ -187,7 +223,9 @@ export default function ExamPage() {
             {totalScore >= CONFIG.PASSING_SCORE ? "🎉" : "📚"}
           </div>
           <h1 className={styles.resultTitle}>
-            {totalScore >= CONFIG.PASSING_SCORE ? "Selamat! Kamu Lulus!" : "Belum Lulus"}
+            {totalScore >= CONFIG.PASSING_SCORE
+              ? "Selamat! Kamu Lulus!"
+              : "Belum Lulus"}
           </h1>
           <div className={styles.resultScore}>{totalScore}/100</div>
           <p className={styles.resultSubtitle}>
@@ -312,7 +350,8 @@ export default function ExamPage() {
         <div className={styles.examGrid}>
           {exams.map((exam) => {
             const isCompleted = completedExams[exam.id];
-            const isLocked = isCompleted && isCompleted.attempts >= CONFIG.MAX_EXAM_ATTEMPTS;
+            const isLocked =
+              isCompleted && isCompleted.attempts >= CONFIG.MAX_EXAM_ATTEMPTS;
             return (
               <div
                 key={exam.id}
@@ -335,7 +374,7 @@ export default function ExamPage() {
                     <p className={styles.examCardDesc}>{exam.description}</p>
                   )}
                   <div className={styles.examCardMeta}>
-                    <span>10 Soal</span>
+                    <span>{exam.questions[0]?.count || 0} Soal</span>
                     <span>Lulus ≥{CONFIG.PASSING_SCORE}%</span>
                   </div>
                   {isCompleted && (

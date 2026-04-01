@@ -1,15 +1,60 @@
 /**
  * Email notification utilities
  * Handles sending email notifications to users
- * Can be extended to work with SendGrid, Mailgun, AWS SES, etc.
+ * Now supports SendGrid integration (uses SENDGRID_API_KEY and SENDGRID_FROM_EMAIL from env)
  */
 
-interface EmailNotification {
-  to: string;
-  subject: string;
-  type: "grade_review" | "exam_graded" | "module_completed" | "exam_available";
-  data: Record<string, any>;
+import "server-only";
+import sgMail from "@sendgrid/mail";
+
+interface GradeReviewData {
+  studentName: string;
+  examTitle: string;
+  score: number;
 }
+
+interface ExamGradedData {
+  studentName: string;
+  examTitle: string;
+  score: number;
+}
+
+interface ModuleCompletedData {
+  studentName: string;
+  moduleName: string;
+  nextModuleName?: string;
+}
+
+interface ExamAvailableData {
+  studentName: string;
+  examTitle: string;
+}
+
+type EmailNotification =
+  | {
+      to: string;
+      subject: string;
+      type: "grade_review";
+      data: GradeReviewData;
+    }
+  | {
+      to: string;
+      subject: string;
+      type: "exam_graded";
+      data: ExamGradedData;
+    }
+  | {
+      to: string;
+      subject: string;
+      type: "module_completed";
+      data: ModuleCompletedData;
+    }
+  | {
+      to: string;
+      subject: string;
+      type: "exam_available";
+      data: ExamAvailableData;
+    };
 
 /**
  * Template for grade review notification
@@ -234,25 +279,34 @@ export async function sendEmailNotification(
         throw new Error("Unknown notification type");
     }
 
-    // TODO: Send email using actual email service
-    // For now, just log for development
-    console.log("📧 Email Notification:", {
-      to: notification.to,
-      subject: emailContent.subject,
-      type: notification.type,
-      timestamp: new Date().toISOString(),
-    });
+    // SendGrid integration
+    const sendgridApiKey = process.env.SENDGRID_API_KEY;
+    const sendgridFromEmail = process.env.SENDGRID_FROM_EMAIL;
 
-    // Example integration with Supabase (uncomment to use):
-    // const response = await fetch(process.env.SUPABASE_EMAIL_ENDPOINT, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     to: notification.to,
-    //     subject: emailContent.subject,
-    //     html: emailContent.html,
-    //   }),
-    // });
+    if (sendgridApiKey && sendgridFromEmail) {
+      sgMail.setApiKey(sendgridApiKey);
+      const msg = {
+        to: notification.to,
+        from: sendgridFromEmail,
+        subject: emailContent.subject,
+        html: emailContent.html,
+      };
+      await sgMail.send(msg);
+      console.log("\ud83d\udce7 Email sent via SendGrid:", {
+        to: notification.to,
+        subject: emailContent.subject,
+        type: notification.type,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      // Fallback: log to console for development
+      console.log("\ud83d\udce7 Email Notification (dev mode):", {
+        to: notification.to,
+        subject: emailContent.subject,
+        type: notification.type,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     return true;
   } catch (error) {

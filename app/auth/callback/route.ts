@@ -1,34 +1,29 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-/**
- * Handles Supabase auth callbacks (email confirmation, password reset, etc)
- * Called when user clicks links in emails
- */
-export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-  const type = requestUrl.searchParams.get("type");
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const type = searchParams.get("type"); // recovery, signup, or invite
+  const next = searchParams.get("next") ?? "/dashboard";
 
-  if (code && type === "recovery") {
+  if (code) {
     const supabase = await createClient();
 
-    // Exchange the code for a session
+    // Exchange the auth code for a user session
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // Redirect to reset password page where user can set new password
-      return NextResponse.redirect(
-        `${requestUrl.origin}/reset-password?session=true`,
-      );
-    }
+      // Jika flow adalah reset password (recovery), arahkan ke form reset
+      if (type === "recovery") {
+        return NextResponse.redirect(`${origin}/reset-password?session=true`);
+      }
 
-    // If there was an error, redirect to forgot password with error
-    return NextResponse.redirect(
-      `${requestUrl.origin}/forgot-password?error=invalid_token`,
-    );
+      // Default: login sukses, arahkan ke dashboard
+      return NextResponse.redirect(`${origin}${next}`);
+    }
   }
 
-  // Default redirect if no valid code/type
-  return NextResponse.redirect(`${requestUrl.origin}/login`);
+  // Jika gagal, kembalikan ke login dengan pesan error
+  return NextResponse.redirect(`${origin}/login?error=auth_code_error`);
 }

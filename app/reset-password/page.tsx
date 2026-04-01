@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import styles from "../login/login.module.css";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,7 +18,9 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // Check if user has valid session from reset link
     const checkSession = async () => {
-      const session = searchParams.get("session");
+      const session = new URLSearchParams(window.location.search).get(
+        "session",
+      );
       if (session === "true") {
         const supabase = createClient();
         const { data } = await supabase.auth.getSession();
@@ -34,7 +35,7 @@ export default function ResetPasswordPage() {
     };
 
     checkSession();
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +70,10 @@ export default function ResetPasswordPage() {
         setError(error.message || "Gagal mengubah password");
         setLoading(false);
       } else {
+        // Sign out Supabase session agar user benar-benar logout
+        await supabase.auth.signOut();
         setSubmitted(true);
-        // Redirect to login after 2 seconds
+        // Redirect to login after 2 detik
         setTimeout(() => {
           router.push("/login");
         }, 2000);
@@ -237,8 +240,15 @@ export default function ResetPasswordPage() {
               </div>
             </div>
 
-            <p style={{ color: "#64748b", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
-              💡 Gunakan password yang kuat dengan kombinasi huruf, angka, dan simbol
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "0.85rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              💡 Gunakan password yang kuat dengan kombinasi huruf, angka, dan
+              simbol
             </p>
 
             <button

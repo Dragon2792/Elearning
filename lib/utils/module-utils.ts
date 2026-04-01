@@ -220,12 +220,12 @@ export async function getNextAvailableModule(): Promise<Module | null> {
       .eq("user_id", user.id);
 
     // Find first incomplete module
-    for (const module of modules) {
+    for (const mod of modules) {
       const moduleProgress = progress?.find(
-        (p) => p.week_number === module.week_number,
+        (p) => p.week_number === mod.week_number,
       );
       if (!moduleProgress || !moduleProgress.is_completed) {
-        return module;
+        return mod;
       }
     }
 

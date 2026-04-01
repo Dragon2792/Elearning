@@ -83,17 +83,16 @@ export default function ModuleDetailPage() {
         .from("module_files")
         .select("*")
         .eq("module_id", modResult.data.id);
+      console.log("[DEBUG] fileResult.data:", fileResult.data);
       if (fileResult.data) setModuleFiles(fileResult.data);
-      await supabase
-        .from("module_progress")
-        .upsert(
-          {
-            user_id: user.id,
-            week_number: week,
-            last_accessed: new Date().toISOString(),
-          },
-          { onConflict: "user_id,week_number" },
-        );
+      await supabase.from("module_progress").upsert(
+        {
+          user_id: user.id,
+          week_number: week,
+          last_accessed: new Date().toISOString(),
+        },
+        { onConflict: "user_id,week_number" },
+      );
       const progResult = await supabase
         .from("module_progress")
         .select("is_completed")
@@ -125,17 +124,15 @@ export default function ModuleDetailPage() {
     const authResult = await supabase.auth.getUser();
     const user = authResult.data.user;
     if (!user) return;
-    await supabase
-      .from("module_progress")
-      .upsert(
-        {
-          user_id: user.id,
-          week_number: week,
-          is_completed: true,
-          last_accessed: new Date().toISOString(),
-        },
-        { onConflict: "user_id,week_number" },
-      );
+    await supabase.from("module_progress").upsert(
+      {
+        user_id: user.id,
+        week_number: week,
+        is_completed: true,
+        last_accessed: new Date().toISOString(),
+      },
+      { onConflict: "user_id,week_number" },
+    );
     setIsCompleted(true);
     setMarking(false);
   };
