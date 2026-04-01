@@ -1,11 +1,11 @@
 .page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 73px);
+  height: 100vh;
 }
 
 .header {
-  background: white;
+  background: rgb(255, 255, 255);
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
   display: flex;
@@ -37,13 +37,13 @@
 .title {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #1e293b;
+  color: #2a3546;
   margin-bottom: 0.1rem;
 }
 
 .subtitle {
   font-size: 0.78rem;
-  color: #64748b;
+  color: #6d7581;
 }
 
 .headerRight {
@@ -57,7 +57,7 @@
   border: 2px solid #e5e7eb;
   border-radius: 10px;
   font-size: 0.85rem;
-  color: #374151;
+  color: #6e7278;
   background: #f9fafb;
   outline: none;
   cursor: pointer;
@@ -86,10 +86,11 @@
 .chatArea {
   flex: 1;
   overflow-y: auto;
-  background: white;
+  background: rgb(243, 239, 239);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   margin-bottom: 1rem;
+  padding-bottom: 100px;
 }
 
 .emptyState {
@@ -209,7 +210,7 @@
 
 .codeLang {
   background: #334155;
-  color: #94a3b8;
+  color: #919cab;
   font-size: 0.75rem;
   padding: 0.4rem 1rem;
   font-family: monospace;
@@ -302,7 +303,7 @@
 }
 
 .textarea::placeholder {
-  color: #9ca3af;
+  color: #8e949f;
 }
 
 .sendBtn {

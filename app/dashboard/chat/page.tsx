@@ -141,7 +141,7 @@ export default function ChatPage() {
           <div>
             <h1 className={styles.title}>AI Tutor</h1>
             <p className={styles.subtitle}>
-              Powered by Claude AI · Siap membantu 24/7
+              Powered by GROOK AI · Siap membantu 24/7
             </p>
           </div>
         </div>
